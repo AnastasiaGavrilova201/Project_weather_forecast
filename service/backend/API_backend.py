@@ -44,7 +44,7 @@ class Model:
             'name': self.name,
             'table_nm': self.table_nm,
             'n_epochs': self.n_epochs,
-            'fitted': False
+            'fitted': self.model.is_fitted()
         }
         logger.debug("inited model %s", self.name)
 
@@ -53,7 +53,7 @@ class Model:
         Trains the model using the associated data and updates its description.
         """
         self.model.fit()
-        self.desc['fitted'] = True
+        self.desc['fitted'] = self.model.is_fitted()
         logger.debug("finished fit model %s", self.name)
 
     def predict(self, start_time: str):
@@ -66,7 +66,7 @@ class Model:
         Returns:
             Dataframe: The predictions made by the model. None if the model is not fitted.
         """
-        if not self.desc['fitted']:
+        if not self.model.is_fitted():
             logger.warning("call of 'predict' for not fitted model %s", self.name)
             return None
         return self.model.predict(start_time)
@@ -87,7 +87,6 @@ class API_Backend:
         """
         self.main_db_table_name = 'test_realtime_6'
         self.main_model = Model(self.main_db_table_name, 'Main')
-        self.main_model.fit()
         self.second_model = None
         self.active_model = self.main_model
         logger.debug("Api backend initialized")

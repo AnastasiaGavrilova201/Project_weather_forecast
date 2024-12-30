@@ -65,6 +65,7 @@ class Temp:
             'x_val': None,
             'y_val': None
         }
+        self.model_filename = f'./models/{self.name}.keras'
         if len(tf.config.list_physical_devices('GPU')) == 0:
             os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
         else:
@@ -204,7 +205,7 @@ class Temp:
                     validation_steps=50)
 
         # model.save('./models/lstm_temp.h5')
-        tf.keras.models.save_model(model, f'./models/{self.name}.keras')
+        tf.keras.models.save_model(model, self.model_filename)
 
         history_df = pd.DataFrame(history.history)
         history_df['date'] = datetime.now()
@@ -315,7 +316,7 @@ class Temp:
         val_data = tf.data.Dataset.from_tensor_slices((x_val, y_val)).batch(self.hyperparameters['BATCH_SIZE'])
 
         # model = tf.keras.models.load_model('lstm_temp.h5')
-        model = tf.keras.models.load_model(f'./models/{self.name}.keras')
+        model = tf.keras.models.load_model(self.model_filename)
 
         predictions = model.predict(val_data)
         predictions = (
@@ -333,6 +334,12 @@ class Temp:
         date_range = pd.date_range(start=start, end=pd.to_datetime(start) + pd.Timedelta(hours=11), freq='H')
         forecast = pd.DataFrame({'date':date_range, 'forecast':averages})
         return forecast
+
+    def is_fitted(self):
+        """
+        something
+        """
+        return os.path.exists(self.model_filename)
 
     def fit(self):
         """

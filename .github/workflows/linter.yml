@@ -17,8 +17,7 @@ jobs:
         pip install pylint
     - name: Analyse code with pylint
       run: |
-        pylint $(git ls-files 'service/*.py') --max-line-length=120 --disable="C0103,C0114,C0115"
-      continue-on-error: true
+        pylint $(git ls-files 'service/*.py') --max-line-length=120 --disable="C0103,C0114,C0115"\
 
   flake8:
     runs-on: ubuntu-latest
@@ -34,8 +33,7 @@ jobs:
         pip install flake8
     - name: Analysing the code with flake8
       run: |
-        flake8 $(git ls-files 'service/*.py') --max-line-length=120
-      continue-on-error: true
+        flake8 $(git ls-files 'service/*.py') --max-line-length=120\
 
   pycodestyle:
     runs-on: ubuntu-latest
@@ -54,6 +52,4 @@ jobs:
         for file in $(git ls-files 'service/*.py'); do
             python3 pycodestyle/pycodestyle.py "$file" || exit_code=1
         done
-        exit $exit_code
-      continue-on-error: true
-
+        exit $exit_code\
