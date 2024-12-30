@@ -120,7 +120,7 @@ class API_Backend:
         """
         return self.active_model.predict(start_time)
 
-    def load_new_model(self, csv_path, table_nm, name='Second', n_epochs=10):
+    def load_new_model(self, csv_path=None, table_nm='test_realtime_6', name='Second', n_epochs=5):
         """
         Loads a new model by uploading data and initializing the model.
 
@@ -130,12 +130,14 @@ class API_Backend:
             name (str, optional): Name of the new model. Defaults to 'Second'.
             n_epochs (int, optional): Number of epochs for training the new model. Defaults to 10.
         """
-        database = DatabaseManager(table_nm)
-        if table_nm != self.main_model.table_nm:
-            database.drop_table(table_nm)
-            database.create_table(table_nm)
-        loader = CsvToDatabase(database)
-        loader.upload_csv_to_db(csv_path, table_nm, batch_size=2048)
+        if csv_path:
+            database = DatabaseManager(table_nm)
+            if table_nm != self.main_model.table_nm:
+                database.drop_table(table_nm)
+                database.create_table(table_nm)
+            loader = CsvToDatabase(database)
+            loader.upload_csv_to_db(csv_path, table_nm, batch_size=2048)
+
         self.second_model = Model(table_nm, name, n_epochs)
         logger.debug("loaded new model '%s'", name)
 

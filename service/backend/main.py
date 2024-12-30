@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from API_backend import API_Backend
 import uvicorn
 import asyncio
@@ -53,11 +53,10 @@ class CSVContent(BaseModel):
 
 class LoadNewModelRequest(BaseModel):
     """Pydantic модель для запроса на загрузку новой модели."""
-    csv_path: str
-    table_nm: str
+    csv_path: Optional[str]
+    table_nm: Optional[str]
     model_name: str
     n_epochs: int
-
 
 app = FastAPI(
     docs_url="/api/openapi",
