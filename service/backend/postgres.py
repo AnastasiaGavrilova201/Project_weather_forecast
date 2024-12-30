@@ -64,7 +64,7 @@ class DatabaseManager:
             'weather_icon': 'str',
         }
         self.create_table()
-    
+
     def _execute(self, query, header=None, need_fetch=True):
         """
         Executes a given SQL query on the database.
@@ -75,7 +75,8 @@ class DatabaseManager:
             need_fetch (bool, optional): Whether to fetch results after execution. Defaults to True.
 
         Returns:
-            pandas.DataFrame: DataFrame containing query results if need_fetch is True. Dataframe has columns from header if not None.
+            pandas.DataFrame: DataFrame containing query results if need_fetch is True.
+                Dataframe has columns from header if not None.
         """
         logger.debug(query)
         with psycopg2.connect(f"""
@@ -87,13 +88,14 @@ class DatabaseManager:
             password={self.db_password}
             target_session_attrs=read-write
         """) as conn:
-                with conn.cursor() as curs:
-                    curs.execute(query)
-                    if need_fetch:
-                        data = curs.fetchall()
-                        df = pd.concat([pd.DataFrame(data, columns=header)], ignore_index=True)
-                        return df
-    
+            with conn.cursor() as curs:
+                curs.execute(query)
+                if need_fetch:
+                    data = curs.fetchall()
+                    df = pd.concat([pd.DataFrame(data, columns=header)], ignore_index=True)
+                    return df
+        return None
+
     def create_table(self, table_nm=None):
         """
         Creates a table in the database if it doesn't already exist.
@@ -132,7 +134,7 @@ class DatabaseManager:
                     sea_level           decimal(8, 3),
                     grnd_level          decimal(8, 3)
                     )""", need_fetch=False)
-    
+
     def drop_table(self, table_nm=None):
         """
         Drops a table from the database if it exists.
@@ -143,7 +145,7 @@ class DatabaseManager:
         if table_nm is None:
             table_nm = self.table_nm
         self._execute(f"DROP TABLE IF EXISTS {table_nm}", need_fetch=False)
-    
+
     def select(self, table_nm=None, header=None, additional_options=""):
         """
         Selects data from a table in the database.
@@ -151,7 +153,8 @@ class DatabaseManager:
         Args:
             table_nm (str, optional): The name of the table to select from. Defaults to the instance's table_nm.
             header (list, optional): Columns to select. Defaults to all columns defined in features.
-            additional_options (str, optional): Additional SQL clauses for the SELECT query. Defaults to an empty string.
+            additional_options (str, optional): Additional SQL clauses for the SELECT query.
+                Defaults to an empty string.
 
         Returns:
             pandas.DataFrame: DataFrame containing the selected data.
@@ -185,11 +188,11 @@ class DatabaseManager:
                     'sea_level',
                     'grnd_level'
                   ]
-        
+
         if table_nm is None:
             table_nm = self.table_nm
         return self._execute(f'SELECT {",".join(header)} FROM public.{table_nm} {additional_options}', header)
-                
+
     def _get_feature(self, data, feature_nm, feature_type):
         """
         Retrieves and formats a feature value from a data dictionary.
@@ -205,31 +208,34 @@ class DatabaseManager:
         if feature_nm not in data:
             return None
         feature_value = data[feature_nm]
+        formatted_value = None
         if isinstance(feature_value, (int, float)) and np.isnan(feature_value):
-            return 'NULL'
-        if feature_type == 'str':
-            return f"'{feature_value}'"
+            formatted_value = 'NULL'
+        elif feature_type == 'str':
+            formatted_value = f"'{feature_value}'"
         elif feature_type == 'num':
-            return str(feature_value)
+            formatted_value = str(feature_value)
         elif feature_type == 'timestamp':
             if 'timezone' in data:
                 dt = datetime.fromtimestamp(int(feature_value),
                                        tz=pytz.timezone(data['timezone'])
                                       )
-                return f"'{dt.isoformat(sep=' ')}'"
+                formatted_value = f"'{dt.isoformat(sep=' ')}'"
             else:
                 dt = datetime.fromtimestamp(int(feature_value))
-                return f"'{dt.isoformat(sep=' ')}'"
-        return None
-    
+                formatted_value = f"'{dt.isoformat(sep=' ')}'"
+        return formatted_value
+
     def insert_data(self, data_dict, feature_replacement_mapping=None, table_nm=None):
         """
         Inserts a single record into the database.
 
         Args:
             data_dict (dict): Data to insert.
-            feature_replacement_mapping (dict, optional): Mapping of features in data_dict to database columns. Defaults to None.
-            table_nm (str, optional): The name of the table to insert into. Defaults to the instance's table_nm.
+            feature_replacement_mapping (dict, optional): Mapping of features in data_dict to database columns.
+                Defaults to None.
+            table_nm (str, optional): The name of the table to insert into.
+                Defaults to the instance's table_nm.
         """
         if table_nm is None:
             table_nm = self.table_nm
@@ -246,19 +252,20 @@ class DatabaseManager:
                 values += [formatted_value]
         self._execute(f'''INSERT INTO {table_nm} (
         {', '.join(headers)}) VALUES ({', '.join(values)})''', need_fetch=False)
-    
+
     def insert_data_batch(self, data_list, feature_replacement_mapping=None, table_nm=None):
         """
         Inserts multiple records into the database.
 
         Args:
             data_list (list): List of data dictionaries to insert.
-            feature_replacement_mapping (dict, optional): Mapping of features in data dictionaries to database columns. Defaults to None.
+            feature_replacement_mapping (dict, optional): Mapping of features in data dictionaries to database columns.
+                Defaults to None.
             table_nm (str, optional): The name of the table to insert into. Defaults to the instance's table_nm.
         """
         if table_nm is None:
             table_nm = self.table_nm
-        logger.debug(f'inserting {len(data_list)} records into {table_nm}')
+        logger.debug('inserting %d records into %s', len(data_list), table_nm)
         self.create_table(table_nm)
         q_values = []
         for data_dict in data_list:

@@ -1,8 +1,9 @@
+import os
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
-import os
 import tensorflow as tf
-from datetime import datetime
 from tensorflow.keras.metrics import MeanAbsoluteError
 
 from log import Logger
@@ -27,6 +28,10 @@ class Temp:
         data_mean (np.array): Mean values for data normalization.
         data_std (np.array): Standard deviation values for data normalization.
         database (DatabaseManager or None): Database manager for data operations.
+        x_train (np.array): X data for train
+        y_train (np.array): y data for train
+        x_val (np.array): X data for validation during train
+        x_val (np.array): y data for validation during train
     """
     def __init__(self, model_name, database=None, n_epochs=10):
         """
@@ -50,11 +55,14 @@ class Temp:
         self.data_mean = np.array([744.41406611, 6.006443, 87.24904045, 224.61552684])
         self.data_std  = np.array([216.24356615, 11.74853683, 112.89627056, 152.0149743])
         self.database = database
+        self.x_train = None
+        self.y_train = None
+        self.x_val = None
+        self.y_val = None
         if len(tf.config.list_physical_devices('GPU')) == 0:
             os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
         else:
             os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-        
 
     def _multivariate_data(self, dataset, target, start_index, end_index, history_size,
                           target_size, step, single_step=False):
@@ -98,7 +106,7 @@ class Temp:
         """
         if self.database:
             df = self.database.select(header=['dt', 'temp'], additional_options="where dt < '2024-01-01' order by dt")
-            df['dt'] = df['dt'].apply(lambda row: str(row).split('+')[0])
+            df['dt'] = df['dt'].apply(lambda row: str(row).split('+', maxsplit=1)[0])
             df['temp'] = df['temp'].astype(np.float64)
         else:
             df=pd.read_csv('./tmp/tes_osnova.csv')
@@ -119,8 +127,7 @@ class Temp:
         features = features.interpolate(method='linear')
         features.reset_index(inplace=True)
         features.rename(columns={'index': 'dt'}, inplace=True)
-        features_base = features.copy()
-        features=features[features['dt']<'2024-01-01 00:00:00'].dropna()
+        features=features[features['dt'] < '2024-01-01 00:00:00'].dropna()
         features=features[-(self.TRAIN_SPLIT + self.VAL_SIZE):].reset_index(drop=True)
         features=features.round(3)
         features.set_index('dt', inplace=True)
@@ -128,7 +135,9 @@ class Temp:
         if np.any(np.isnan(features)) or np.any(np.isinf(features)):
             logger.warning("Данные содержат NaN или бесконечные значения!")
 
-        logger.info(f'TRAIN_SPLIT period : {features[:self.TRAIN_SPLIT].index.min()} - {features[:self.TRAIN_SPLIT].index.max()}')
+        logger.info('TRAIN_SPLIT period: %(min)s - %(max)s',
+            {'min': features[:self.TRAIN_SPLIT].index.min(),
+             'max': features[:self.TRAIN_SPLIT].index.max()})
 
         dataset = features.values
 
@@ -153,11 +162,11 @@ class Temp:
                                                                self.future_target,
                                                                self.STEP)
 
-        logger.debug(f'x_train shape: {self.x_train.shape}')
-        logger.debug(f'y_train shape: {self.y_train.shape}')
+        logger.debug('x_train shape: %s', self.x_train.shape)
+        logger.debug('y_train shape: %s', self.y_train.shape)
 
-        logger.debug(f'x_val shape: {self.x_val.shape}')
-        logger.debug(f'y_val shape : {self.y_val.shape}')
+        logger.debug('x_val shape: %s', self.x_val.shape)
+        logger.debug('y_val shape: %s', self.y_val.shape)
 
     def _fit(self):
         """
@@ -245,9 +254,9 @@ class Temp:
         else:
             df=pd.read_csv('./tmp/test_realtime_2.csv')
 
-        logger.info(f'Последняя дата в датафрейме : {df["dt"].max()}')
+        logger.info('Последняя дата в датафрейме : %s', df["dt"].max())
         df=df.dropna(axis=1)
-        df['dt'] = df['dt'].apply(lambda row: str(row).split('+')[0])
+        df['dt'] = df['dt'].apply(lambda row: str(row).split('+', maxsplit=1)[0])
 
         ss=pd.read_csv('./tmp/sunrise_sunset_2026.csv').iloc[:,1:]
         ss['date'] = ss['date'] + ' 00:00:00'

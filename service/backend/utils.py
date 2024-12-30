@@ -49,8 +49,8 @@ class CsvToDatabase:
             'weather_icon': 'str',
         }
         self.db_manager = db_manager
-    
-    def _timezones_to_str(self, df, column_name, inplace=False):
+
+    def timezones_to_str(self, df, column_name, inplace=False):
         """
         Converts timezone offsets in a DataFrame column to string representations of timezones.
 
@@ -72,7 +72,7 @@ class CsvToDatabase:
             df_new = df.copy()
         df_new[column_name] = df_new[column_name].map(offset_to_tz).fillna("Europe/Moscow")
         return df_new
-    
+
     def upload_csv_to_db(self, filename, table_nm, batch_size=256):
         """
         Uploads data from a CSV file into a database table in batches.
@@ -82,10 +82,10 @@ class CsvToDatabase:
             table_nm (str): The name of the database table to insert data into.
             batch_size (int, optional): The number of records to include in each batch. Defaults to 256.
         """
-        logger.debug(f'uploading data from {filename} to table {table_nm}')
+        logger.debug('uploading data from %s to table %s', filename, table_nm)
         df = pd.read_csv(filename)
         if df['timezone'].dtype != str:
-            self._timezones_to_str(df, 'timezone', inplace=True)
+            self.timezones_to_str(df, 'timezone', inplace=True)
         dict_records = df.to_dict(orient='records')
         records = []
         for record in dict_records:

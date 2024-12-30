@@ -3,7 +3,11 @@ from logging.handlers import RotatingFileHandler
 import os
 
 class Logger:
-    def __init__(self, name: str = __name__, log_file: str = "app.log", log_directory: str = "./log", max_bytes: int = 1024**2, file_count: int = 5):
+    def __init__(self,
+                 name: str = __name__,
+                 log_file: str = "./log/app.log",
+                 max_bytes: int = 1024**2,
+                 file_count: int = 5):
         """
         Initializes a logger with rotation.
 
@@ -14,6 +18,7 @@ class Logger:
             max_bytes (int): Max size of a log file before rotating. Defaults to 1 MB.
             backup_count (int): Number of backup files to keep. Defaults to 5.
         """
+        log_directory = '/'.join(log_file.split('/')[:-1])
         os.makedirs(log_directory, exist_ok=True)
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.INFO)
@@ -30,3 +35,7 @@ class Logger:
     def get_logger(self):
         """Returns the configured logger."""
         return self.logger
+
+    def remove_handler(self, handler):
+        """Remove a handler from the logger."""
+        self.logger.removeHandler(handler)
