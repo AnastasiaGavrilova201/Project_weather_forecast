@@ -1,13 +1,6 @@
-import csv
-import os
-import requests
-import shutil
-from datetime import datetime, timedelta
-import time
-import traceback
+from datetime import datetime
 import psycopg2
 import pytz
-from copy import deepcopy
 import pandas as pd
 import numpy as np
 

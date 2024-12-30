@@ -66,7 +66,7 @@ class Model:
             Dataframe: The predictions made by the model. None if the model is not fitted.
         """
         if not self.desc['fitted']:
-            logger.warning(f"call of 'predict' for not fitted model {name}")
+            logger.warning(f"call of 'predict' for not fitted model {self.name}")
             return None
         return self.model.predict(start_time)
     
@@ -116,13 +116,7 @@ class API_Backend:
             start_time (str): The start time for predictions.
 
         Returns:
-            Dataframe
-        """
-        Retrieves metadata for all loaded models.
-
-        Returns:
-            list: A list of dictionaries containing model descriptions.
-        """: The predictions made by the active model.
+            Dataframe: The predictions made by the active model.
         """
         return self.active_model.predict(start_time)
     

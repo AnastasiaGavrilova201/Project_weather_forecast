@@ -1,12 +1,3 @@
-import csv
-import os
-import requests
-from datetime import datetime, timedelta
-import time
-import traceback
-import psycopg2
-import pytz
-from copy import deepcopy
 import pandas as pd
 
 from log import Logger
