@@ -26,7 +26,7 @@ class Model:
         n_epochs (int): Number of epochs for training.
         desc (dict): Description of the model, including metadata and training status.
     """
-    def __init__(self, table_nm, name, n_epochs=2):
+    def __init__(self, table_nm, name, n_epochs=1):
         """
         Initializes the Model with a database table, model name, and training epochs.
 

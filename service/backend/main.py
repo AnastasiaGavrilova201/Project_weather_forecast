@@ -120,42 +120,38 @@ async def load_new_model(request: LoadNewModelRequest) -> LoadNewModelResponse:
     Загружает вручную заданное содержимое CSV в базу данных и создает модель.
     """
     try:
-        api_backend.load_new_model(request.csv_path, request.table_nm, request.model_name, request.n_epochs)
+        api_backend.load_new_model('csv_uploads/'+request.csv_path, request.table_nm, request.model_name, request.n_epochs)
         return {"message": "New model loaded successfully"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Invalid data. Uploaded data should be a valid dataset for this model")
 
 
 # Создаем директорию для сохранения загруженных файлов, если она не существует
 os.makedirs("csv_uploads", exist_ok=True)
 
-@app.post("/upload_csv/")
-async def upload_csv(csv: CSVContent) -> dict:
+@app.post("/upload_csv")
+async def upload_csv(file: UploadFile = File(...)) -> dict:
     """
-    Загружает содержимое CSV из текстового содержимого и сохраняет его на сервере.
+    Загружает CSV-файл и сохраняет его на сервере.
 
     Args:
-        csv (CSVContent): Содержимое CSV-файла в виде строки.
+        file (UploadFile): Загружаемый файл CSV.
 
     Возвращает:
-        dict: Ответ с подтверждением успешной обработки.
+        dict: Ответ с подтверждением успешной загрузки и именем файла.
     
     Raises:
-        HTTPException: При ошибке обработки содержимого.
+        HTTPException: При ошибке сохранения файла.
     """
     try:
-        # Определяем имя файла для сохранения
-        file_location = f"csv_uploads/{csv.file_name}"
-        
-        # Сохраняем содержимое
-        with open(file_location, "w") as file:
-            file.write(csv.content)
-        
-        return {"message": "CSV content uploaded successfully"}
+        file_location = f"csv_uploads/{file.filename}"
+        with open(file_location, "wb") as file_object:
+            file_object.write(await file.read())
+        return {"message": f"CSV file '{file.filename}' uploaded successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to process CSV content: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload the CSV file: {str(e)}")
 
 
 # Запуск сервера
