@@ -36,7 +36,7 @@ class PredictRequest(BaseModel):
 
 class PredictResponse(BaseModel):
     """Pydantic модель для ответа с предсказаниями."""
-    predictions: List[float]
+    predictions: str
 
 class LoadNewModelRequest(BaseModel):
     """Pydantic модель для запроса на загрузку новой модели."""

@@ -118,7 +118,7 @@ class API_Backend:
         Returns:
             Dataframe: The predictions made by the active model.
         """
-        return self.active_model.predict(start_time)
+        return self.active_model.predict(start_time).to_json()
 
     def load_new_model(self, csv_path=None, table_nm='test_realtime_6', name='Second', n_epochs=5):
         """
