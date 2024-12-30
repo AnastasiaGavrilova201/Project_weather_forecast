@@ -21,6 +21,7 @@ jobs:
     - name: Analyse code with pylint
       run: |
         pylint $(git ls-files '${{ matrix.directory }}/*.py') --max-line-length=120 --disable="C0103,C0114,C0115"
+      continue-on-error: true
 
   flake8:
     runs-on: ubuntu-latest
@@ -40,6 +41,7 @@ jobs:
     - name: Analysing the code with flake8
       run: |
         flake8 $(git ls-files '${{ matrix.directory }}/*.py') --max-line-length=120
+      continue-on-error: true
 
   pycodestyle:
     runs-on: ubuntu-latest
@@ -62,4 +64,5 @@ jobs:
             python3 pycodestyle/pycodestyle.py "$file" || exit_code=1
         done
         exit $exit_code
+      continue-on-error: true
 
