@@ -81,7 +81,7 @@ async def set_active_model(request: SetActiveModelRequest) -> SetActiveModelResp
         api_backend.set_active(request.model_name)
         return {"message": f"Active model set to {request.model_name}"}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -92,7 +92,6 @@ async def fit_model() -> FitModelResponse:
         async def train():
             api_backend.fit()
 
-        # Устанавливаем тайм-аут на 10 секунд
         await asyncio.wait_for(train(), timeout=10.0)
         return {"message": "Model training completed"}
     except asyncio.TimeoutError:
@@ -105,8 +104,6 @@ async def predict(request: PredictRequest) -> PredictResponse:
     """Возвращает предсказания от активной модели."""
     try:
         predictions = api_backend.predict(request.start_time)
-        if predictions is None:
-            raise HTTPException(status_code=400, detail="Model is not fitted")
         return {"predictions": predictions}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -124,7 +121,7 @@ async def load_new_model(request: LoadNewModelRequest) -> LoadNewModelResponse:
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Invalid data. Uploaded data should be a valid dataset for this model")
+        raise HTTPException(status_code=500, detail=f"Invalid data. Error: {str(e)}")
 
 
 # Создаем директорию для сохранения загруженных файлов, если она не существует
@@ -145,6 +142,8 @@ async def upload_csv(file: UploadFile = File(...)) -> dict:
         HTTPException: При ошибке сохранения файла.
     """
     try:
+        if not file.filename.endswith('.csv'):
+            raise HTTPException(status_code=400, detail="Only CSV files are accepted.")
         file_location = f"csv_uploads/{file.filename}"
         with open(file_location, "wb") as file_object:
             file_object.write(await file.read())

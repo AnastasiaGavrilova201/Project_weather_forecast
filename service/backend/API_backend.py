@@ -110,17 +110,22 @@ class API_Backend:
             return [self.main_model.desc]
         return [self.main_model.desc, self.second_model.desc]
 
-    def predict(self, start_time):
+    def predict(self, start_time: str):
         """
-        Makes predictions using the currently active model.
-
+        Makes predictions using the active model.
+        
         Args:
             start_time (str): The start time for predictions.
-
+        
         Returns:
-            Dataframe: The predictions made by the active model.
+            DataFrame: Predictions made by the active model.
+        
+        Raises:
+            ValueError: If the active model is not fitted.
         """
-        return self.active_model.predict(start_time).to_json()
+        if not self.active_model.model.is_fitted():
+            raise ValueError("Active model is not fitted.")
+        return self.active_model.predict(start_time)
 
     def load_new_model(self, csv_path=None, table_nm='test_realtime_6', name='Second', n_epochs=5):
         """
@@ -146,13 +151,18 @@ class API_Backend:
     def set_active(self, name):
         """
         Sets the active model by name.
-
+        
         Args:
             name (str): Name of the model to set as active.
+        
+        Raises:
+            ValueError: If the specified model does not exist.
         """
-        if self.second_model.name == name:
+        if self.second_model is not None and self.second_model.name == name:
             self.active_model = self.second_model
             logger.debug("changed active model to %s", self.second_model.name)
-        else:
+        elif self.main_model.name == name:
             self.active_model = self.main_model
             logger.debug("changed active model to %s", self.main_model.name)
+        else:
+            raise ValueError(f"Model with name {name} does not exist.")
