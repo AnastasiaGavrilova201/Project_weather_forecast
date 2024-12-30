@@ -125,7 +125,7 @@ class API_Backend:
         """
         if not self.active_model.model.is_fitted():
             raise ValueError("Active model is not fitted.")
-        return self.active_model.predict(start_time)
+        return self.active_model.predict(start_time).to_json()
 
     def load_new_model(self, csv_path=None, table_nm='test_realtime_6', name='Second', n_epochs=5):
         """
