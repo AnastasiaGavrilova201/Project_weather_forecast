@@ -10,17 +10,18 @@ st.title("EDA")
 st.sidebar.success("Просмотр EDA")
 
 logger.info("Пользователь находится на странице с EDA-частью")
-data = pd.read_csv('data/Custom_location.csv')
-data = data.iloc[-(5*24):, :]
-
-st.info("Превью данных:")
-st.dataframe(data)
-
+data = pd.read_csv('data/hourly_data.csv')
+#data = data.iloc[-(5*24):, :]
+data = data.drop(columns = 'Unnamed: 0')
+st.info("Превью исторических данных о погоде:")
+data_for_preview = data.copy()
+data_for_preview.columns = ['Дата и время', 'Температура (\u00B0C)', 'Давление (мм)', 'Влажность (%)', 'Скорость ветра (м/c)']
+st.dataframe(data_for_preview)
 
 def graph(column):
     forecaster = NaiveForecaster(window_length=24, strategy='mean')
     y = data[column]
-    y.index = pd.date_range(start=min(data['dt_iso'])[:16], end=max(data['dt_iso'])[:16], freq="h").to_period()
+    y.index = pd.date_range(start=min(data['dt'])[:16], end=max(data['dt'])[:16], freq="h").to_period()
     forecaster.fit(y)
     y_pred = forecaster.predict(fh=range(1, 25))
     y_title = {'temp': '\u00B0C', 'pressure': 'мм', 'wind_speed': 'м/с', 'humidity': '%'}
@@ -35,12 +36,12 @@ def graph(column):
     fig1.add_trace(go.Scatter(x = y_pred.index.to_timestamp(),
                               y = y_pred,
                               mode = 'lines',
-                              name = 'Прогноз'
+                              name = 'Наивный прогноз на следующие сутки'
                               )
                    )
 
     fig1.update_layout(title = f'Динамика {gragh_title[column]}',
-                       xaxis_title = 'Дата и время',
+                       xaxis_title = 'Дата',
                        yaxis_title = y_title[column],
                        height = 500,
                        width = 1000
@@ -59,5 +60,3 @@ graph('wind_speed')
 
 st.header("Давление")
 graph('pressure')
-
-
