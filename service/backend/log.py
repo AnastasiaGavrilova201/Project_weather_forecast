@@ -5,7 +5,7 @@ import os
 class Logger:
     def __init__(self,
                  name: str = __name__,
-                 log_file: str = "./log/app.log",
+                 log_file: str = "./app.log",
                  max_bytes: int = 1024**2,
                  file_count: int = 5):
         """
