@@ -3,8 +3,8 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-import tensorflow as tf
-from tensorflow.keras.metrics import MeanAbsoluteError
+import tensorflow as tf  # pylint: disable=import-error
+from tensorflow.keras.metrics import MeanAbsoluteError  # pylint: disable=import-error
 
 from log import Logger
 
@@ -43,45 +43,56 @@ class Temp:
             n_epochs (int, optional): Number of epochs for training. Defaults to 10.
         """
         self.name = model_name
-        self.past_history = 720
-        self.future_target = 72
-        self.STEP = 6
-        self.BATCH_SIZE = 256
-        self.BUFFER_SIZE = 10000
-        self.TRAIN_SPLIT = 300000
-        self.VAL_SIZE = 600000
-        self.EVALUATION_INTERVAL = 200
-        self.EPOCHS = n_epochs
-        self.data_mean = np.array([744.41406611, 6.006443, 87.24904045, 224.61552684])
-        self.data_std  = np.array([216.24356615, 11.74853683, 112.89627056, 152.0149743])
         self.database = database
-        self.x_train = None
-        self.y_train = None
-        self.x_val = None
-        self.y_val = None
+        self.multivariate_data_config = {
+            'history_size': 720,
+            'target_size': 72,
+            'step': 6
+        }
+        self.hyperparameters = {
+            'BATCH_SIZE': 256,
+            'BUFFER_SIZE': 10000,
+            'TRAIN_SPLIT': 300000,
+            'VAL_SIZE': 600000,
+            'EVALUATION_INTERVAL': 200,
+            'EPOCHS': n_epochs,
+            'data_mean': np.array([744.41406611, 6.006443, 87.24904045, 224.61552684]),
+            'data_std': np.array([216.24356615, 11.74853683, 112.89627056, 152.0149743])
+        }
+        self.datasets = {
+            'x_train': None,
+            'y_train': None,
+            'x_val': None,
+            'y_val': None
+        }
         if len(tf.config.list_physical_devices('GPU')) == 0:
             os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
         else:
             os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-    def _multivariate_data(self, dataset, target, start_index, end_index, history_size,
-                          target_size, step, single_step=False):
+    def _multivariate_data(self, dataset, target, index_range, config):
         """
         Prepares multivariate data for training or validation.
 
         Args:
             dataset (np.array): The dataset array.
             target (np.array): Target values.
-            start_index (int): Starting index for data slicing.
-            end_index (int or None): Ending index for data slicing. Defaults to None for the full range.
-            history_size (int): Number of past steps to include.
-            target_size (int): Number of future steps to forecast.
-            step (int): Step size for sampling.
-            single_step (bool, optional): Whether to forecast a single step. Defaults to False.
+            index_range (tuple): A tuple containing the start and end indices for data slicing. 
+                             The start index is inclusive, and the end index is exclusive.
+            config (dict): A dictionary containing the configuration with keys:
+                - 'history_size' (int): Number of past steps to include.
+                - 'target_size' (int): Number of future steps to forecast.
+                - 'step' (int): Step size for sampling.
+                - 'single_step' (bool, optional): Whether to forecast a single step. Defaults to False.
 
         Returns:
             tuple: Arrays of data and labels for the model.
         """
+        start_index, end_index = index_range
+        history_size = config['history_size']
+        target_size = config['target_size']
+        step = config['step']
+        single_step = config.get('single_step', False)
         data = []
         labels = []
 
@@ -128,7 +139,8 @@ class Temp:
         features.reset_index(inplace=True)
         features.rename(columns={'index': 'dt'}, inplace=True)
         features=features[features['dt'] < '2024-01-01 00:00:00'].dropna()
-        features=features[-(self.TRAIN_SPLIT + self.VAL_SIZE):].reset_index(drop=True)
+        total_samples = self.hyperparameters['TRAIN_SPLIT'] + self.hyperparameters['VAL_SIZE']
+        features=features[-total_samples:].reset_index(drop=True)
         features=features.round(3)
         features.set_index('dt', inplace=True)
 
@@ -136,37 +148,31 @@ class Temp:
             logger.warning("Данные содержат NaN или бесконечные значения!")
 
         logger.info('TRAIN_SPLIT period: %(min)s - %(max)s',
-            {'min': features[:self.TRAIN_SPLIT].index.min(),
-             'max': features[:self.TRAIN_SPLIT].index.max()})
+            {'min': features[:self.hyperparameters['TRAIN_SPLIT']].index.min(),
+             'max': features[:self.hyperparameters['TRAIN_SPLIT']].index.max()})
 
         dataset = features.values
 
-        if np.any(self.data_std == 0):
+        if np.any(self.hyperparameters['data_std'] == 0):
             logger.warning("Стандартное отклонение равно нулю!")
 
-        dataset = (dataset-self.data_mean) / self.data_std
+        dataset = (dataset-self.hyperparameters['data_mean']) / self.hyperparameters['data_std']
 
-        self.x_train, self.y_train = self._multivariate_data(dataset,
-                                                                   dataset[:, 1],
-                                                                   0,
-                                                                   self.TRAIN_SPLIT,
-                                                                   self.past_history,
-                                                                   self.future_target,
-                                                                   self.STEP)
+        self.datasets['x_train'], self.datasets['y_train'] = self._multivariate_data(dataset,
+                                                            dataset[:, 1],
+                                                            (0, self.hyperparameters['TRAIN_SPLIT']),
+                                                            self.multivariate_data_config)
 
-        self.x_val, self.y_val = self._multivariate_data(dataset,
-                                                               dataset[:, 1],
-                                                               self.TRAIN_SPLIT,
-                                                               None,
-                                                               self.past_history,
-                                                               self.future_target,
-                                                               self.STEP)
+        self.datasets['x_val'], self.datasets['y_val'] = self._multivariate_data(dataset,
+                                                        dataset[:, 1],
+                                                        (self.hyperparameters['TRAIN_SPLIT'], None),
+                                                        self.multivariate_data_config)
 
-        logger.debug('x_train shape: %s', self.x_train.shape)
-        logger.debug('y_train shape: %s', self.y_train.shape)
+        logger.debug('x_train shape: %s', self.datasets['x_train'].shape)
+        logger.debug('y_train shape: %s', self.datasets['y_train'].shape)
 
-        logger.debug('x_val shape: %s', self.x_val.shape)
-        logger.debug('y_val shape: %s', self.y_val.shape)
+        logger.debug('x_val shape: %s', self.datasets['x_val'].shape)
+        logger.debug('y_val shape: %s', self.datasets['y_val'].shape)
 
     def _fit(self):
         """
@@ -176,22 +182,24 @@ class Temp:
         os.makedirs('./report', exist_ok=True)
 
         train_data = tf.data.Dataset.from_tensor_slices(
-            (self.x_train,
-             self.y_train)).cache().shuffle(self.BUFFER_SIZE).batch(self.BATCH_SIZE).repeat()
+            (self.datasets['x_train'],
+             self.datasets['y_train'])).cache().shuffle(
+                 self.hyperparameters['BUFFER_SIZE']).batch(
+                 self.hyperparameters['BATCH_SIZE']).repeat()
 
         val_data = tf.data.Dataset.from_tensor_slices(
-            (self.x_val,
-             self.y_val)).batch(self.BATCH_SIZE).repeat()
+            (self.datasets['x_val'],
+             self.datasets['y_val'])).batch(self.hyperparameters['BATCH_SIZE']).repeat()
 
         model = tf.keras.models.Sequential()
-        model.add(tf.keras.layers.LSTM(32, return_sequences=True, input_shape=self.x_train.shape[-2:]))
+        model.add(tf.keras.layers.LSTM(32, return_sequences=True, input_shape=self.datasets['x_train'].shape[-2:]))
         model.add(tf.keras.layers.LSTM(16, activation='relu'))
         model.add(tf.keras.layers.Dense(72))
         model.compile(optimizer=tf.keras.optimizers.RMSprop(clipvalue=1.0), loss='mae', metrics=[MeanAbsoluteError()])
 
         history = model.fit(train_data,
-                    epochs=self.EPOCHS,
-                    steps_per_epoch=self.EVALUATION_INTERVAL,
+                    epochs=self.hyperparameters['EPOCHS'],
+                    steps_per_epoch=self.hyperparameters['EVALUATION_INTERVAL'],
                     validation_data=val_data,
                     validation_steps=50)
 
@@ -207,21 +215,27 @@ class Temp:
         else:
             history_df.to_csv('./report/lstm_temp_history.csv', index=False)
 
-    def _multivariate_data2(self, dataset, target, history_size, target_size, step, single_step=False):
+    def _multivariate_data2(self, dataset, target, config):
         """
         Prepares multivariate data for prediction.
 
         Args:
             dataset (np.array): The dataset array.
             target (np.array): Target values.
-            history_size (int): Number of past steps to include.
-            target_size (int): Number of future steps to forecast.
-            step (int): Step size for sampling.
-            single_step (bool, optional): Whether to forecast a single step. Defaults to False.
+            config (dict): A dictionary containing the configuration with keys:
+                - 'history_size' (int): Number of past steps to include.
+                - 'target_size' (int): Number of future steps to forecast.
+                - 'step' (int): Step size for sampling.
+                - 'single_step' (bool, optional): Whether to forecast a single step. Defaults to False.
 
         Returns:
             tuple: Arrays of data and labels for prediction.
         """
+        history_size = config['history_size']
+        target_size = config['target_size']
+        step = config['step']
+        single_step = config.get('single_step', False)
+
         data = []
         labels = []
 
@@ -229,24 +243,18 @@ class Temp:
         start_index = end_index - history_size
         if start_index < 0:
             raise ValueError("History size is too large for the given dataset.")
+
         indices = range(start_index, end_index, step)
         data.append(dataset[indices])
+
         if single_step:
             labels.append(target[end_index + target_size])
         else:
             labels.append(target[end_index:end_index + target_size])
+
         return np.array(data), np.array(labels)
 
-    def predict(self, start):
-        """
-        Generates forecasts based on the given start date.
-
-        Args:
-            start (str): The start date for forecasting.
-
-        Returns:
-            pd.DataFrame: A DataFrame containing forecasted values and their corresponding timestamps.
-        """
+    def _prepare_data_for_predict(self, start):
         if self.database:
             logger.debug('using data from database')
             df = self.database.select(header=['dt', 'temp'], additional_options="where dt > '2024-01-01' order by dt")
@@ -285,21 +293,35 @@ class Temp:
         features = pd.concat([features,features2])
 
         dataset = features.values
-        dataset = (dataset-self.data_mean) / self.data_std
+        dataset = (dataset-self.hyperparameters['data_mean']) / self.hyperparameters['data_std']
 
         x_val, y_val = self._multivariate_data2(dataset,
                                                  dataset[:, 1],
-                                                 self.past_history,
-                                                 self.future_target,
-                                                 self.STEP)
+                                                 self.multivariate_data_config)
+        return x_val, y_val
 
-        val_data = tf.data.Dataset.from_tensor_slices((x_val, y_val)).batch(self.BATCH_SIZE)
+    def predict(self, start):
+        """
+        Generates forecasts based on the given start date.
+
+        Args:
+            start (str): The start date for forecasting.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing forecasted values and their corresponding timestamps.
+        """
+
+        x_val, y_val = self._prepare_data_for_predict(start)
+        val_data = tf.data.Dataset.from_tensor_slices((x_val, y_val)).batch(self.hyperparameters['BATCH_SIZE'])
 
         # model = tf.keras.models.load_model('lstm_temp.h5')
         model = tf.keras.models.load_model(f'./models/{self.name}.keras')
 
         predictions = model.predict(val_data)
-        predictions = (predictions * self.data_std[1]  + self.data_mean[1]).flatten()
+        predictions = (
+            predictions * self.hyperparameters['data_std'][1]
+            + self.hyperparameters['data_mean'][1]
+        ).flatten()
 
         num_groups = len(predictions) // 6
         averages = []

@@ -9,7 +9,6 @@ class CsvToDatabase:
     A class for handling the process of transforming and uploading CSV data into a database.
 
     Attributes:
-        features (dict): A dictionary mapping column names to their data types.
         db_manager (DatabaseManager): A database manager instance for interacting with the database.
     """
     def __init__(self, db_manager):
@@ -19,35 +18,6 @@ class CsvToDatabase:
         Args:
             db_manager (DatabaseManager): An instance of the DatabaseManager class to handle database operations.
         """
-        self.features = {
-            'dt': 'timestamp',
-            'timezone': 'str',
-            'city_name': 'str',
-            'lat': 'num',
-            'lon': 'num',
-            'temp': 'num',
-            'visibility': 'num',
-            'dew_point': 'num',
-            'feels_like': 'num',
-            'temp_min': 'num',
-            'temp_max': 'num',
-            'pressure': 'num',
-            'sea_level': 'num',
-            'grnd_level': 'num',
-            'humidity': 'num',
-            'wind_speed': 'num',
-            'wind_deg': 'num',
-            'wind_gust': 'num',
-            'rain_1h': 'num',
-            'rain_3h': 'num',
-            'snow_1h': 'num',
-            'snow_3h': 'num',
-            'clouds_all': 'num',
-            'weather_id': 'num',
-            'weather_main': 'str',
-            'weather_description': 'str',
-            'weather_icon': 'str',
-        }
         self.db_manager = db_manager
 
     def timezones_to_str(self, df, column_name, inplace=False):

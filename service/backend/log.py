@@ -5,7 +5,7 @@ import os
 class Logger:
     def __init__(self,
                  name: str = __name__,
-                 log_file: str = "./app.log",
+                 log_file: str = "./log/app.log",
                  max_bytes: int = 1024**2,
                  file_count: int = 5):
         """
@@ -24,7 +24,7 @@ class Logger:
         self.logger.setLevel(logging.INFO)
         if not self.logger.hasHandlers():
             handler = RotatingFileHandler(
-                f'{log_directory}/{log_file}', maxBytes=max_bytes, backupCount=file_count
+                f'{log_file}', maxBytes=max_bytes, backupCount=file_count
             )
             formatter = logging.Formatter(
                 "[%(levelname)s] %(asctime)s %(name)s: %(message)s"
