@@ -58,6 +58,6 @@ jobs:
     - name: Analysing the code with pycodestyle
       run: |
         for file in $(git ls-files 'service/*.py'); do
-            python3 pycodestyle.py "$file"
+            python3 pycodestyle/pycodestyle.py "$file"
         done
 
