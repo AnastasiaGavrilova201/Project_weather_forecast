@@ -57,7 +57,9 @@ jobs:
         git clone https://github.com/PyCQA/pycodestyle.git
     - name: Analysing the code with pycodestyle
       run: |
+        exit_code=0
         for file in $(git ls-files 'service/*.py'); do
-            python3 pycodestyle/pycodestyle.py "$file"
+            python3 pycodestyle.py "$file" || exit_code=1
         done
+        exit $exit_code
 
