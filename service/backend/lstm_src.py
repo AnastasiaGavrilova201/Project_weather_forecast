@@ -10,6 +10,7 @@ from log import Logger
 
 logger = Logger(__name__).get_logger()
 
+
 class Temp:
     """
     A class to handle the training, transformation, and prediction processes for a weather forecasting model via LSTM.
@@ -78,7 +79,7 @@ class Temp:
         Args:
             dataset (np.array): The dataset array.
             target (np.array): Target values.
-            index_range (tuple): A tuple containing the start and end indices for data slicing. 
+            index_range (tuple): A tuple containing the start and end indices for data slicing.
                              The start index is inclusive, and the end index is exclusive.
             config (dict): A dictionary containing the configuration with keys:
                 - 'history_size' (int): Number of past steps to include.
@@ -121,13 +122,13 @@ class Temp:
             df['dt'] = df['dt'].apply(lambda row: str(row).split('+', maxsplit=1)[0])
             df['temp'] = df['temp'].astype(np.float64)
         else:
-            df=pd.read_csv('./tmp/tes_osnova.csv')
-        ss=pd.read_csv('./tmp/sunrise_sunset_2026.csv').iloc[:,1:]
+            df = pd.read_csv('./tmp/tes_osnova.csv')
+        ss = pd.read_csv('./tmp/sunrise_sunset_2026.csv').iloc[:, 1:]
 
         ss['date'] = ss['date'] + ' 00:00:00'
-        df = df.merge(ss, left_on='dt', right_on='date', how='left').drop('date',axis=1)
-        df = df[['dt','diff_rise_set','temp','new_feature_1','new_feature_2']]
-        df['dt']=pd.to_datetime(df['dt'])
+        df = df.merge(ss, left_on='dt', right_on='date', how='left').drop('date', axis=1)
+        df = df[['dt', 'diff_rise_set', 'temp', 'new_feature_1', 'new_feature_2']]
+        df['dt'] = pd.to_datetime(df['dt'])
         df.set_index('dt', inplace=True)
 
         if df.index.duplicated().any():
@@ -139,18 +140,19 @@ class Temp:
         features = features.interpolate(method='linear')
         features.reset_index(inplace=True)
         features.rename(columns={'index': 'dt'}, inplace=True)
-        features=features[features['dt'] < '2024-01-01 00:00:00'].dropna()
+        features = features[features['dt'] < '2024-01-01 00:00:00'].dropna()
         total_samples = self.hyperparameters['TRAIN_SPLIT'] + self.hyperparameters['VAL_SIZE']
-        features=features[-total_samples:].reset_index(drop=True)
-        features=features.round(3)
+        features = features[-total_samples:].reset_index(drop=True)
+        features = features.round(3)
         features.set_index('dt', inplace=True)
 
         if np.any(np.isnan(features)) or np.any(np.isinf(features)):
             logger.warning("Данные содержат NaN или бесконечные значения!")
 
-        logger.info('TRAIN_SPLIT period: %(min)s - %(max)s',
-            {'min': features[:self.hyperparameters['TRAIN_SPLIT']].index.min(),
-             'max': features[:self.hyperparameters['TRAIN_SPLIT']].index.max()})
+        logger.info('TRAIN_SPLIT period: %(min)s - %(max)s', {
+            'min': features[:self.hyperparameters['TRAIN_SPLIT']].index.min(),
+            'max': features[:self.hyperparameters['TRAIN_SPLIT']].index.max()
+        })
 
         dataset = features.values
 
@@ -159,15 +161,19 @@ class Temp:
 
         dataset = (dataset-self.hyperparameters['data_mean']) / self.hyperparameters['data_std']
 
-        self.datasets['x_train'], self.datasets['y_train'] = self._multivariate_data(dataset,
-                                                            dataset[:, 1],
-                                                            (0, self.hyperparameters['TRAIN_SPLIT']),
-                                                            self.multivariate_data_config)
+        self.datasets['x_train'], self.datasets['y_train'] = self._multivariate_data(
+            dataset,
+            dataset[:, 1],
+            (0, self.hyperparameters['TRAIN_SPLIT']),
+            self.multivariate_data_config
+        )
 
-        self.datasets['x_val'], self.datasets['y_val'] = self._multivariate_data(dataset,
-                                                        dataset[:, 1],
-                                                        (self.hyperparameters['TRAIN_SPLIT'], None),
-                                                        self.multivariate_data_config)
+        self.datasets['x_val'], self.datasets['y_val'] = self._multivariate_data(
+            dataset,
+            dataset[:, 1],
+            (self.hyperparameters['TRAIN_SPLIT'], None),
+            self.multivariate_data_config
+        )
 
         logger.debug('x_train shape: %s', self.datasets['x_train'].shape)
         logger.debug('y_train shape: %s', self.datasets['y_train'].shape)
@@ -198,11 +204,13 @@ class Temp:
         model.add(tf.keras.layers.Dense(72))
         model.compile(optimizer=tf.keras.optimizers.RMSprop(clipvalue=1.0), loss='mae', metrics=[MeanAbsoluteError()])
 
-        history = model.fit(train_data,
-                    epochs=self.hyperparameters['EPOCHS'],
-                    steps_per_epoch=self.hyperparameters['EVALUATION_INTERVAL'],
-                    validation_data=val_data,
-                    validation_steps=50)
+        history = model.fit(
+            train_data,
+            epochs=self.hyperparameters['EPOCHS'],
+            steps_per_epoch=self.hyperparameters['EVALUATION_INTERVAL'],
+            validation_data=val_data,
+            validation_steps=50
+        )
 
         # model.save('./models/lstm_temp.h5')
         tf.keras.models.save_model(model, self.model_filename)
@@ -261,18 +269,18 @@ class Temp:
             df = self.database.select(header=['dt', 'temp'], additional_options="where dt > '2024-01-01' order by dt")
             df['temp'] = df['temp'].astype(np.float64)
         else:
-            df=pd.read_csv('./tmp/test_realtime_2.csv')
+            df = pd.read_csv('./tmp/test_realtime_2.csv')
 
         logger.info('Последняя дата в датафрейме : %s', df["dt"].max())
-        df=df.dropna(axis=1)
+        df = df.dropna(axis=1)
         df['dt'] = df['dt'].apply(lambda row: str(row).split('+', maxsplit=1)[0])
 
-        ss=pd.read_csv('./tmp/sunrise_sunset_2026.csv').iloc[:,1:]
+        ss = pd.read_csv('./tmp/sunrise_sunset_2026.csv').iloc[:, 1:]
         ss['date'] = ss['date'] + ' 00:00:00'
-        ss2 = ss[ss['date'] >= start][['date','diff_rise_set', 'new_feature_1','new_feature_2']].head(3).copy()
-        df = df.merge(ss, left_on='dt', right_on='date', how='left').drop('date',axis=1)
-        df = df[['dt','diff_rise_set','temp','new_feature_1','new_feature_2']]
-        df['dt']=pd.to_datetime(df['dt'])
+        ss2 = ss[ss['date'] >= start][['date', 'diff_rise_set', 'new_feature_1', 'new_feature_2']].head(3).copy()
+        df = df.merge(ss, left_on='dt', right_on='date', how='left').drop('date', axis=1)
+        df = df[['dt', 'diff_rise_set', 'temp', 'new_feature_1', 'new_feature_2']]
+        df['dt'] = pd.to_datetime(df['dt'])
         df.set_index('dt', inplace=True)
 
         new_index = pd.date_range(start=df.index.min(), end=df.index.max(), freq='10T')
@@ -280,7 +288,7 @@ class Temp:
         features = features.interpolate(method='linear')
         features.reset_index(inplace=True)
         features.rename(columns={'index': 'dt'}, inplace=True)
-        features=features[features['dt'] < start].dropna()
+        features = features[features['dt'] < start].dropna()
         features.set_index('dt', inplace=True)
 
         last_12_values = features['temp'].tail(72).tolist()
@@ -291,14 +299,14 @@ class Temp:
         features2 = features2.head(72)
         features2.insert(1, 'temp', last_12_values)
 
-        features = pd.concat([features,features2])
+        features = pd.concat([features, features2])
 
         dataset = features.values
         dataset = (dataset-self.hyperparameters['data_mean']) / self.hyperparameters['data_std']
 
         x_val, y_val = self._multivariate_data2(dataset,
-                                                 dataset[:, 1],
-                                                 self.multivariate_data_config)
+                                                dataset[:, 1],
+                                                self.multivariate_data_config)
         return x_val, y_val
 
     def predict(self, start):
@@ -327,12 +335,12 @@ class Temp:
         num_groups = len(predictions) // 6
         averages = []
         for i in range(num_groups):
-            group = predictions[i * 6 : (i + 1) * 6]
-            average = np.round(np.mean(group),2)
+            group = predictions[(i * 6):(i + 1) * 6]
+            average = np.round(np.mean(group), 2)
             averages.append(average)
 
         date_range = pd.date_range(start=start, end=pd.to_datetime(start) + pd.Timedelta(hours=11), freq='H')
-        forecast = pd.DataFrame({'date':date_range, 'forecast':averages})
+        forecast = pd.DataFrame({'date': date_range, 'forecast': averages})
         return forecast
 
     def is_fitted(self):

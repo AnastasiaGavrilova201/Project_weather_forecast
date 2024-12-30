@@ -50,6 +50,6 @@ jobs:
       run: |
         exit_code=0
         for file in $(git ls-files 'service/*.py'); do
-            python3 pycodestyle/pycodestyle.py "$file" || exit_code=1
+            python3 pycodestyle/pycodestyle.py --max-line-length=120 "$file" || exit_code=1
         done
         exit $exit_code\

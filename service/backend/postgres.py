@@ -8,6 +8,7 @@ from log import Logger
 
 logger = Logger(__name__).get_logger()
 
+
 class DatabaseManager:
     """
     A class to manage database operations.
@@ -160,34 +161,35 @@ class DatabaseManager:
             pandas.DataFrame: DataFrame containing the selected data.
         """
         if header is None:
-            header = ['city_name',
-                    'lat',
-                    'lon',
-                    'temp',
-                    'temp_min',
-                    'temp_max',
-                    'feels_like',
-                    'pressure',
-                    'humidity',
-                    'dew_point',
-                    'wind_speed',
-                    'wind_deg',
-                    'wind_gust',
-                    'clouds_all',
-                    'rain_1h',
-                    'rain_3h',
-                    'snow_1h',
-                    'snow_3h',
-                    'weather_id',
-                    'weather_main',
-                    'weather_description',
-                    'weather_icon',
-                    'visibility',
-                    'dt',
-                    'timezone',
-                    'sea_level',
-                    'grnd_level'
-                  ]
+            header = [
+                'city_name',
+                'lat',
+                'lon',
+                'temp',
+                'temp_min',
+                'temp_max',
+                'feels_like',
+                'pressure',
+                'humidity',
+                'dew_point',
+                'wind_speed',
+                'wind_deg',
+                'wind_gust',
+                'clouds_all',
+                'rain_1h',
+                'rain_3h',
+                'snow_1h',
+                'snow_3h',
+                'weather_id',
+                'weather_main',
+                'weather_description',
+                'weather_icon',
+                'visibility',
+                'dt',
+                'timezone',
+                'sea_level',
+                'grnd_level'
+            ]
 
         if table_nm is None:
             table_nm = self.table_nm
@@ -217,9 +219,10 @@ class DatabaseManager:
             formatted_value = str(feature_value)
         elif feature_type == 'timestamp':
             if 'timezone' in data:
-                dt = datetime.fromtimestamp(int(feature_value),
-                                       tz=pytz.timezone(data['timezone'])
-                                      )
+                dt = datetime.fromtimestamp(
+                    int(feature_value),
+                    tz=pytz.timezone(data['timezone'])
+                )
                 formatted_value = f"'{dt.isoformat(sep=' ')}'"
             else:
                 dt = datetime.fromtimestamp(int(feature_value))

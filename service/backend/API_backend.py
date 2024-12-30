@@ -14,6 +14,7 @@ else:
 
 logger = Logger(__name__).get_logger()
 
+
 class Model:
     """
     A class representing a machine learning model for weather data.
@@ -70,6 +71,7 @@ class Model:
             logger.warning("call of 'predict' for not fitted model %s", self.name)
             return None
         return self.model.predict(start_time)
+
 
 class API_Backend:
     """

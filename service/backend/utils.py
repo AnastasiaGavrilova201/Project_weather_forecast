@@ -4,6 +4,7 @@ from log import Logger
 
 logger = Logger(__name__).get_logger()
 
+
 class CsvToDatabase:
     """
     A class for handling the process of transforming and uploading CSV data into a database.

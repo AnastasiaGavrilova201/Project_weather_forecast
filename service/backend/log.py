@@ -2,6 +2,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 
+
 class Logger:
     def __init__(self,
                  name: str = __name__,
@@ -14,7 +15,7 @@ class Logger:
         Args:
             name (str): Logger name.
             log_file (str): File to save logs.
-            log_directory (str): Directory to save logs. 
+            log_directory (str): Directory to save logs.
             max_bytes (int): Max size of a log file before rotating. Defaults to 1 MB.
             backup_count (int): Number of backup files to keep. Defaults to 5.
         """
