@@ -5,9 +5,6 @@ on: [push]
 jobs:
   pylint:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        directory: ["service/backend", "service/frontend"]
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
@@ -20,14 +17,11 @@ jobs:
         pip install pylint
     - name: Analyse code with pylint
       run: |
-        pylint $(git ls-files '${{ matrix.directory }}/*.py') --max-line-length=120 --disable="C0103,C0114,C0115"
+        pylint $(git ls-files 'service/*.py') --max-line-length=120 --disable="C0103,C0114,C0115"
       continue-on-error: true
 
   flake8:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        directory: ["service/backend", "service/frontend"]
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
@@ -40,14 +34,11 @@ jobs:
         pip install flake8
     - name: Analysing the code with flake8
       run: |
-        flake8 $(git ls-files '${{ matrix.directory }}/*.py') --max-line-length=120
+        flake8 $(git ls-files 'service/*.py') --max-line-length=120
       continue-on-error: true
 
   pycodestyle:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        directory: ["service/backend", "service/frontend"]
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
@@ -60,7 +51,7 @@ jobs:
     - name: Analysing the code with pycodestyle
       run: |
         exit_code=0
-        for file in $(git ls-files '${{ matrix.directory }}/*.py'); do
+        for file in $(git ls-files 'service/*.py'); do
             python3 pycodestyle/pycodestyle.py "$file" || exit_code=1
         done
         exit $exit_code
