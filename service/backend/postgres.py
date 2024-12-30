@@ -29,7 +29,7 @@ class DatabaseManager:
             table_nm (str): The default name of the table to manage.
         """
         self.table_nm = table_nm
-        self.db_password = '5JgMm1Ft4t8W'
+        self.db_password = ''
         self.host = 'rc1a-oe2h7ehfs86xa1fq.mdb.yandexcloud.net,rc1b-5k2553slvm58d9id.mdb.yandexcloud.net'
         self.port = 6432
         self.db_nm = 'Weather'
