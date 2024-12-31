@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from sktime.forecasting.naive import NaiveForecaster
 from log import Logger
+import httpx
 
 logger = Logger(__name__).get_logger()
 
@@ -10,8 +11,61 @@ logger.info("Пользователь находится на странице �
 st.title("ML")
 st.sidebar.success("Просмотр ML-части")
 
-st.header("Обучение модели")
+st.markdown('### Загрузка csv-файла')
+uploaded_file = st.file_uploader("Выберите CSV-файл c данными", type=["csv"])
+if uploaded_file is not None:
+    upload_data = pd.read_csv(uploaded_file)
+    st.info("Превью загруженных данных:")
+    st.dataframe(upload_data)
+    if st.button("Сохранить загруженный файл"):
+        file_content = uploaded_file.getvalue()
+        file_name = uploaded_file.name
+        files = {'file': (uploaded_file.name, file_content, 'csv')}
+        response = httpx.post("http://localhost:8000/upload_file", files=files)
+        if response.status_code == 200:
+            st.success("Ваш CSV-файл сохранен.")
+            logger.info("Пользователь загрузил csv-файл")
+else:
+    st.info("Пожалуйста, загрузите не пустой CSV-файл.")
 
+st.markdown('### Создание нового класса модели')
+model_new = st.text_input("Введите id модели", key = "model_new")
+st.markdown('##### Введите гиперпараметры новой модели')
+past_history = st.number_input("Укажите past_history модели",
+                               value = 720)
+step = st.number_input("Укажите step модели",
+                       value = 6,
+                       min_value = 1)
+batch_size = st.number_input("Укажите batch_size модели",
+                             value = 256,
+                             min_value = 1)
+buffer_size = st.number_input("Укажите buffer_size модели",
+                              value = 10000)
+train_split = st.number_input("Укажите train_split модели",
+                              value = 300000)
+evaluation_interval = st.number_input("Укажите evaluation_interval модели",
+                                      value = 200)
+epochs = st.number_input("Укажите epochs модели",
+                         value = 10,
+                         min_value = 1)
+if st.button("Создать новый класс для модели"):
+    if model_new == '':
+        st.error('Введите id модели')
+        logger.warning("Нет id модели для создания нового класса")
+    else:
+        params = {
+            #"csv_path": file_name,
+            #"table_nm": model_new,
+            "model_name": model_new,
+            "n_epochs": epochs
+        }
+        response = httpx.post("http://localhost:8000/load_new_model", json = params)
+        if response.status_code == 200:
+            st.success(f'Создан новый класс для модели {model_new}')
+            logger.info("Пользователь создал новый класс модели")
+
+
+st.header("Предобученная модель")
 st.markdown('##### Параметры LSTM-модели')
 params = {'Параметр':
               ['past_history', 'step', 'batch_size',
@@ -22,7 +76,6 @@ params = {'Параметр':
 st.dataframe(pd.DataFrame(params))
 
 lstm_hist = pd.read_csv('data/lstm_temp_history.csv')
-
 fig = go.Figure()
 fig.add_trace(go.Scatter(x = lstm_hist['loss'].index+1,
                          y = lstm_hist['loss'],
@@ -42,13 +95,13 @@ fig.update_layout(title = 'Кривая обучения',
                   height = 500,
                   width = 1000
                   )
-
 st.plotly_chart(fig)
 
 st.markdown('### Загруженные модели')
 if st.button("Показать все загруженные модели"):
     logger.info("Пользователь вывел все загруженные модели")
-    response = {'id': ['model1']}
+    response = httpx.get("http://localhost:8000/models")
+    #if response.status_code = 200:
     models_table = pd.DataFrame(response)
     if len(response.keys()) == 0:
         st.error('Нет загруженных моделей')
@@ -63,43 +116,29 @@ if st.button("Установить активную модель"):
         st.error('Введите id модели')
         logger.warning("Нет id активной модели")
     else:
-        st.success(f'Установлена активная модель {active_model_id}')
-        logger.warning("Установлена активная модель")
+        params = {
+            "model_name": active_model_id
+        }
+        response = httpx.post("http://localhost:8000/set_model", json=params)
+        if response.status_code == 200:
+            st.success(f'Установлена активная модель {active_model_id}')
+            logger.warning("Установлена активная модель")
 
 st.markdown('### Обучение активной модели')
 
-model_id_fit = st.text_input("Введите id модели", key = "model_id_fit")
-st.markdown('##### Введите гиперпараметры модели')
-past_history = st.number_input("Укажите past_history модели",
-                               value = 720)
-step = st.number_input("Укажите step модели",
-                       value = 6,
-                       min_value = 1)
-batch_size = st.number_input("Укажите batch_size модели",
-                             value = 256,
-                             min_value = 1)
-buffer_size = st.number_input("Укажите buffer_size модели",
-                              value = 10000)
-train_split = st.number_input("Укажите train_split модели",
-                              value = 300000)
-evaluation_interval = st.number_input("Укажите evaluation_interval модели",
-                                      value = 200)
-epochs = st.number_input("Укажите epochs модели",
-                         value = 10,
-                         min_value = 1)
+#model_id_fit = st.text_input("Введите id модели", key = "model_id_fit")
 
 if st.button("Обучить активную модель"):
-    if model_id_fit == '':
-        st.error('Введите id модели')
-        logger.warning("Нет id модели для обучения")
-    else:
-        st.success(f'Модель {model_id_fit} обучена')
+    response = httpx.post("http://localhost:8000/fit")
+    if response.status_code == 200:
+        st.success(f'Модель {active_model_id} обучена')
         logger.info("Пользователь обучил активную модель")
 
 
 st.markdown('### Прогноз активной модели')
 
-model_id_forecast = st.text_input("Введите id модели", key = "model_id_forecast")
+date_time_forecast = st.text_input("Введите начальную дату и время прогноза в формате YYYY:MM:DD HH:MM:SS",
+                                   key = "date_time_forecast")
 options = {'3 часа': 3, '6 часов': 6, '9 часов': 9, '12 часов':12}
 forecast_horizon = st.selectbox("Прогноз на:", options.keys())
 
@@ -107,10 +146,13 @@ data = pd.read_csv('data/hourly_data.csv')
 data = data[['temp', 'dt']]
 data = data.iloc[-24:, :]
 if st.button("Показать прогноз температуры"):
-    if model_id_forecast == '':
-        st.error('Введите id модели')
-        logger.warning("Нет id модели для предсказания")
+    if date_time_forecast == '':
+        st.error('Дата и время прогноза не указаны')
+        logger.warning("Нет даты и времени для предсказания")
     else:
+        params = {"start_time": date_time_forecast}
+        response = httpx.post("http://localhost:8000/predict", json = params)
+        #if response.status_code == 200:
         forecaster = NaiveForecaster(window_length=24, strategy='mean')
         y = data['temp']
         y.index = pd.date_range(start = min(data['dt'])[:16], end = max(data['dt'])[:16], freq="h").to_period()
@@ -143,25 +185,3 @@ if st.button("Показать прогноз температуры"):
                            )
         st.plotly_chart(fig1)
         logger.info("Пользователь рассчитал прогноз погоды")
-
-st.markdown('### Создание нового класса модели')
-model_new = st.text_input("Введите id модели", key = "model_new")
-if st.button("Создать новый класс для модели"):
-    if model_new == '':
-        st.error('Введите id модели')
-        logger.warning("Нет id модели для создания нового класса")
-    else:
-        st.success(f'Создан новый класс для модели {model_new}')
-        logger.info("Пользователь создал новый класс модели")
-
-st.markdown('### Загрузка csv-файла')
-uploaded_file = st.file_uploader("Выберите CSV-файл c данными", type=["csv"])
-if uploaded_file is not None:
-    upload_data = pd.read_csv(uploaded_file)
-    st.info("Превью загруженных данных:")
-    st.dataframe(upload_data)
-    if st.button("Сохранить загруженный файл"):
-        st.success("Ваш CSV-файл сохранен.")
-        logger.info("Пользователь загрузил csv-файл")
-else:
-    st.info("Пожалуйста, загрузите не пустой CSV-файл.")
