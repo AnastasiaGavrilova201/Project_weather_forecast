@@ -85,12 +85,15 @@ class API_Backend:
         second_model (Model, optional): Instance of a secondary model. Defaults to None.
         active_model (Model): The currently active model for operations.
     """
-    def __init__(self):
+    def __init__(self, main_model_n_epochs=5):
         """
         Initializes the API backend with a primary model and prepares for operations.
+
+        Args:
+            main_model_n_epochs (int, optional): Number of epochs for training the new model. Defaults to 5.
         """
         self.main_db_table_name = 'test_realtime_6'
-        self.main_model = Model(self.main_db_table_name, 'Main')
+        self.main_model = Model(self.main_db_table_name, 'Main', main_model_n_epochs)
         self.second_model = None
         self.active_model = self.main_model
         logger.debug("Api backend initialized")
