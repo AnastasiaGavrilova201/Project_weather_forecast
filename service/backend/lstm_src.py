@@ -17,22 +17,26 @@ class Temp:
 
     Attributes:
         name (str): Name of the model.
-        past_history (int): Number of past time steps used for forecasting.
-        future_target (int): Number of future time steps to forecast.
-        STEP (int): Step size for data sampling.
-        BATCH_SIZE (int): Batch size for training.
-        BUFFER_SIZE (int): Buffer size for shuffling the dataset.
-        TRAIN_SPLIT (int): Number of samples for training split.
-        VAL_SIZE (int): Number of samples for validation split.
-        EVALUATION_INTERVAL (int): Steps per epoch for evaluation.
-        EPOCHS (int): Number of training epochs.
-        data_mean (np.array): Mean values for data normalization.
-        data_std (np.array): Standard deviation values for data normalization.
         database (DatabaseManager or None): Database manager for data operations.
-        x_train (np.array): X data for train
-        y_train (np.array): y data for train
-        x_val (np.array): X data for validation during train
-        x_val (np.array): y data for validation during train
+        multivariate_data_config (dict): Configuration for multivariate data preparation with the following keys:
+            - 'history_size' (int): Number of past time steps to consider for forecasting.
+            - 'target_size' (int): Number of future time steps to forecast.
+            - 'step' (int): Step size for data sampling.
+        hyperparameters (dict): Dictionary containing hyperparameters for the model with the following keys:
+            - 'BATCH_SIZE' (int): Batch size for training.
+            - 'BUFFER_SIZE' (int): Buffer size for shuffling the dataset.
+            - 'TRAIN_SPLIT' (int): Number of samples to use for the training split.
+            - 'VAL_SIZE' (int): Number of samples to use for the validation split.
+            - 'EVALUATION_INTERVAL' (int): Steps per epoch for evaluation.
+            - 'EPOCHS' (int): Number of training epochs.
+            - 'data_mean' (np.array): Array of mean values for data normalization.
+            - 'data_std' (np.array): Array of standard deviation values for data normalization.
+        datasets (dict): Dictionary containing datasets for training and validation with the following keys:
+            - 'x_train' (np.array or None): Input features for training.
+            - 'y_train' (np.array or None): Target labels for training.
+            - 'x_val' (np.array or None): Input features for validation.
+            - 'y_val' (np.array or None): Target labels for validation.
+        model_filename (str): File path to save or load the trained model.
     """
     def __init__(self, model_name, database=None, n_epochs=10):
         """
@@ -212,7 +216,6 @@ class Temp:
             validation_steps=50
         )
 
-        # model.save('./models/lstm_temp.h5')
         tf.keras.models.save_model(model, self.model_filename)
 
         history_df = pd.DataFrame(history.history)
@@ -263,18 +266,51 @@ class Temp:
 
         return np.array(data), np.array(labels)
 
-    def _prepare_data_for_predict(self, start):
+    def _get_raw_data(self):
+        """
+        Fetches raw data from the database or a CSV file.
+
+        Returns:
+            pd.DataFrame: The raw dataset.
+        """
         if self.database:
             logger.debug('using data from database')
             df = self.database.select(header=['dt', 'temp'], additional_options="where dt > '2024-01-01' order by dt")
             df['temp'] = df['temp'].astype(np.float64)
         else:
             df = pd.read_csv('./tmp/test_realtime_2.csv')
-
         logger.info('Последняя дата в датафрейме : %s', df["dt"].max())
         df = df.dropna(axis=1)
         df['dt'] = df['dt'].apply(lambda row: str(row).split('+', maxsplit=1)[0])
+        return df
 
+    def _get_history_data(self, start, history_samples, df):
+        """
+        Fetches historical data from the dataset.
+
+        Args:
+            start (str): The start date for fetching historical data.
+            history_samples (int): The number of historical samples to retrieve.
+            df (pd.DataFrame): The dataset.
+
+        Returns:
+            pd.DataFrame: Historical data.
+        """
+        df['dt'] = pd.to_datetime(df['dt'])
+        df = df[df['dt'] < start]
+        return df.tail(history_samples)
+
+    def _prepare_data_for_predict(self, start, df):
+        """
+        Prepares data for prediction, including feature engineering and normalization.
+
+        Args:
+            start (str): The start date for prediction.
+            df (pd.DataFrame): The dataset.
+
+        Returns:
+            tuple: Prepared x_val and y_val data for prediction.
+        """
         ss = pd.read_csv('./tmp/sunrise_sunset_2026.csv').iloc[:, 1:]
         ss['date'] = ss['date'] + ' 00:00:00'
         ss2 = ss[ss['date'] >= start][['date', 'diff_rise_set', 'new_feature_1', 'new_feature_2']].head(3).copy()
@@ -309,21 +345,19 @@ class Temp:
                                                 self.multivariate_data_config)
         return x_val, y_val
 
-    def predict(self, start):
+    def _predict(self, start, x_val, y_val):
         """
-        Generates forecasts based on the given start date.
+        Generates predictions using the trained model.
 
         Args:
-            start (str): The start date for forecasting.
+            start (str): The start date for predictions.
+            x_val (np.array): Input data for prediction.
+            y_val (np.array): Target values for validation.
 
         Returns:
-            pd.DataFrame: A DataFrame containing forecasted values and their corresponding timestamps.
+            tuple: Date range and predicted values.
         """
-
-        x_val, y_val = self._prepare_data_for_predict(start)
         val_data = tf.data.Dataset.from_tensor_slices((x_val, y_val)).batch(self.hyperparameters['BATCH_SIZE'])
-
-        # model = tf.keras.models.load_model('lstm_temp.h5')
         model = tf.keras.models.load_model(self.model_filename)
 
         predictions = model.predict(val_data)
@@ -340,12 +374,36 @@ class Temp:
             averages.append(average)
 
         date_range = pd.date_range(start=start, end=pd.to_datetime(start) + pd.Timedelta(hours=11), freq='H')
-        forecast = pd.DataFrame({'date': date_range, 'forecast': averages})
+        return date_range, averages
+
+    def predict(self, start, history_samples=0):
+        """
+        Generates forecasts based on the given start date.
+
+        Args:
+            start (str): The start date for forecasting.
+            history_samples (int, optional): Number of historical samples to include in the output. Defaults to 0.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing forecasted values and their corresponding timestamps.
+        """
+        raw_data = self._get_raw_data()
+        if history_samples > 0:
+            history_data = self._get_history_data(start, history_samples, raw_data.copy())
+        x_val, y_val = self._prepare_data_for_predict(start, raw_data)
+        date_range, averages = self._predict(start, x_val, y_val)
+        forecast = pd.DataFrame({'dt': date_range, 'temp': averages})
+        if history_samples > 0:
+            print(history_samples)
+            return pd.concat([history_data, forecast], ignore_index=True, axis=0)
         return forecast
 
     def is_fitted(self):
         """
-        something
+        Checks whether the model has been fitted and saved to disk.
+
+        Returns:
+            bool: True if the model file exists, False otherwise.
         """
         return os.path.exists(self.model_filename)
 

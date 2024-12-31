@@ -34,7 +34,7 @@ class Model:
         Args:
             table_nm (str): The name of the database table to use.
             name (str): The name of the model.
-            n_epochs (int, optional): Number of epochs for training. Defaults to 10.
+            n_epochs (int, optional): Number of epochs for training. Defaults to 1.
         """
         self.table_nm = table_nm
         self.database = DatabaseManager(self.table_nm)
@@ -57,20 +57,22 @@ class Model:
         self.desc['fitted'] = self.model.is_fitted()
         logger.debug("finished fit model %s", self.name)
 
-    def predict(self, start_time: str):
+    def predict(self, start_time: str, history_samples=0):
         """
         Makes predictions using the trained model.
 
         Args:
             start_time (str): The start time for predictions.
+            history_samples (int, optional): Number of historical samples to include in the result. Defaults to 0.
 
         Returns:
-            Dataframe: The predictions made by the model. None if the model is not fitted.
+            DataFrame: The predictions made by the model with historical history_samples.
+                None if the model is not fitted.
         """
         if not self.model.is_fitted():
             logger.warning("call of 'predict' for not fitted model %s", self.name)
             return None
-        return self.model.predict(start_time)
+        return self.model.predict(start_time, history_samples)
 
 
 class API_Backend:
@@ -110,32 +112,33 @@ class API_Backend:
             return [self.main_model.desc]
         return [self.main_model.desc, self.second_model.desc]
 
-    def predict(self, start_time: str):
+    def predict(self, start_time: str, history_samples=0):
         """
         Makes predictions using the active model.
-        
+
         Args:
             start_time (str): The start time for predictions.
-        
+            history_samples (int, optional): Number of historical samples to include in predictions. Defaults to 0.
+
         Returns:
             DataFrame: Predictions made by the active model.
-        
+
         Raises:
             ValueError: If the active model is not fitted.
         """
         if not self.active_model.model.is_fitted():
             raise ValueError("Active model is not fitted.")
-        return self.active_model.predict(start_time).to_json()
+        return self.active_model.predict(start_time, history_samples).to_json()
 
     def load_new_model(self, csv_path=None, table_nm='test_realtime_6', name='Second', n_epochs=5):
         """
         Loads a new model by uploading data and initializing the model.
 
         Args:
-            csv_path (str): Path to the CSV file containing data in OWM format.
+            csv_path (str, optional): Path to the CSV file containing data in OWM format. Defaults to None.
             table_nm (str): Name of the database table for the new model.
             name (str, optional): Name of the new model. Defaults to 'Second'.
-            n_epochs (int, optional): Number of epochs for training the new model. Defaults to 10.
+            n_epochs (int, optional): Number of epochs for training the new model. Defaults to 5.
         """
         if csv_path:
             database = DatabaseManager(table_nm)
@@ -151,10 +154,9 @@ class API_Backend:
     def set_active(self, name):
         """
         Sets the active model by name.
-        
+
         Args:
             name (str): Name of the model to set as active.
-        
         Raises:
             ValueError: If the specified model does not exist.
         """
