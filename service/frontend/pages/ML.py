@@ -25,6 +25,9 @@ if uploaded_file is not None:
         if response.status_code == 200:
             st.success("Ваш CSV-файл сохранен.")
             logger.info("Пользователь загрузил csv-файл")
+        else:
+            st.error(response.text)
+            logger.error(response.text)
 else:
     st.info("Пожалуйста, загрузите не пустой CSV-файл.")
 
@@ -63,6 +66,9 @@ if st.button("Создать новый класс для модели"):
         if response.status_code == 200:
             st.success(f'Создан новый класс для модели {model_new}')
             logger.info("Пользователь создал новый класс модели")
+        else:
+            st.error(response.text)
+            logger.error(response.text)
 
 
 st.header("Предобученная модель")
@@ -101,13 +107,17 @@ st.markdown('### Загруженные модели')
 if st.button("Показать все загруженные модели"):
     logger.info("Пользователь вывел все загруженные модели")
     response = httpx.get("http://localhost:8000/models")
-    #if response.status_code = 200:
-    models_table = pd.DataFrame(response)
-    if len(response.keys()) == 0:
-        st.error('Нет загруженных моделей')
+    if response.status_code = 200:
+        if len(response.keys()) == 0:
+            st.error('Нет загруженных моделей')
+        else:
+            models_table = pd.DataFrame(response)
+            st.success('id моделей:')
+            st.dataframe(models_table)
     else:
-        st.success('id моделей:')
-        st.dataframe(models_table)
+        st.error(response.text)
+        logger.error(response.text)
+
 
 st.markdown('### Установка активной модели')
 active_model_id = st.text_input("Введите id модели", key="active_model_id")
@@ -122,7 +132,10 @@ if st.button("Установить активную модель"):
         response = httpx.post("http://localhost:8000/set_model", json=params)
         if response.status_code == 200:
             st.success(f'Установлена активная модель {active_model_id}')
-            logger.warning("Установлена активная модель")
+            logger.info(response.text)
+        else:
+            st.error(response.text)
+            logger.error(response.text)
 
 st.markdown('### Обучение активной модели')
 
@@ -130,9 +143,12 @@ st.markdown('### Обучение активной модели')
 
 if st.button("Обучить активную модель"):
     response = httpx.post("http://localhost:8000/fit")
-    if response.status_code == 200:
+    if rsponse.status_code == 200:
         st.success(f'Модель {active_model_id} обучена')
         logger.info("Пользователь обучил активную модель")
+    else:
+        st.error(response.text)
+        logger.error(response.text)
 
 
 st.markdown('### Прогноз активной модели')
@@ -152,7 +168,11 @@ if st.button("Показать прогноз температуры"):
     else:
         params = {"start_time": date_time_forecast}
         response = httpx.post("http://localhost:8000/predict", json = params)
-        #if response.status_code == 200:
+        if response.status_code == 200:
+            logger.info(response.text)
+        else:
+            st.error(response.text)
+            logger.error(response.text)
         forecaster = NaiveForecaster(window_length=24, strategy='mean')
         y = data['temp']
         y.index = pd.date_range(start = min(data['dt'])[:16], end = max(data['dt'])[:16], freq="h").to_period()
