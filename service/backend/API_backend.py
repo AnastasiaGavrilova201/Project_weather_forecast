@@ -140,7 +140,7 @@ class API_Backend:
             name (str, optional): Name of the new model. Defaults to 'Second'.
             n_epochs (int, optional): Number of epochs for training the new model. Defaults to 5.
         """
-        if csv_path:
+        if (csv_path is not None) and (table_nm != 'test_realtime_6') and os.path.exists(f'csv_uploads/{csv_path}'):
             database = DatabaseManager(table_nm)
             if table_nm != self.main_model.table_nm:
                 database.drop_table(table_nm)

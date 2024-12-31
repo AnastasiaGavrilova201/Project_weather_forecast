@@ -53,8 +53,8 @@ class CSVContent(BaseModel):
 
 class LoadNewModelRequest(BaseModel):
     """Pydantic модель для запроса на загрузку новой модели."""
-    csv_path: Optional[str]
-    table_nm: Optional[str]
+    csv_path: Optional[str] = None
+    table_nm: Optional[str] = 'test_realtime_6'  
     model_name: str
     n_epochs: int
 
@@ -116,7 +116,11 @@ async def load_new_model(request: LoadNewModelRequest) -> LoadNewModelResponse:
     Загружает вручную заданное содержимое CSV в базу данных и создает модель.
     """
     try:
-        api_backend.load_new_model('csv_uploads/'+request.csv_path, request.table_nm, request.model_name, request.n_epochs)
+        if request.csv_path is not None:
+            csv_path = 'csv_uploads/'+request.csv_path
+        else:
+            csv_path = None
+        api_backend.load_new_model(csv_path, request.table_nm, request.model_name, request.n_epochs)
         return {"message": "New model loaded successfully"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
