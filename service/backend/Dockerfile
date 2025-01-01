@@ -10,6 +10,6 @@ RUN mkdir -p ~/.postgresql && \
     --output-document ~/.postgresql/root.crt && \
     chmod 0600 ~/.postgresql/root.crt
 
-RUN pwd && ls -la && pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 CMD ["python3", "main.py"]
