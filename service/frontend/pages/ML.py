@@ -155,7 +155,7 @@ if st.button("Обучить активную модель"):
 
 st.markdown('### Прогноз активной модели')
 
-date_time_forecast = st.text_input("Введите начальную дату и время прогноза в формате YYYY:MM:DD HH:MM:SS",
+date_time_forecast = st.text_input("Введите начальную дату и время прогноза в формате YYYY-MM-DD HH:MM:SS",
                                    key = "date_time_forecast")
 options = {'3 часа': 3, '6 часов': 6, '9 часов': 9, '12 часов':12}
 forecast_horizon = st.selectbox("Прогноз на:", options.keys())
