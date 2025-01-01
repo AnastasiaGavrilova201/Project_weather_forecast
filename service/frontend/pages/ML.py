@@ -4,6 +4,8 @@ import plotly.graph_objects as go
 from sktime.forecasting.naive import NaiveForecaster
 from log import Logger
 import httpx
+import json
+from plotly.subplots import make_subplots
 
 logger = Logger(__name__).get_logger()
 
@@ -21,7 +23,7 @@ if uploaded_file is not None:
         file_content = uploaded_file.getvalue()
         file_name = uploaded_file.name
         files = {'file': (uploaded_file.name, file_content, 'csv')}
-        response = httpx.post("http://localhost:8000/upload_file", files=files)
+        response = httpx.post("http://localhost:8000/upload_csv", files=files)
         if response.status_code == 200:
             st.success("Ваш CSV-файл сохранен.")
             logger.info("Пользователь загрузил csv-файл")
@@ -107,11 +109,11 @@ st.markdown('### Загруженные модели')
 if st.button("Показать все загруженные модели"):
     logger.info("Пользователь вывел все загруженные модели")
     response = httpx.get("http://localhost:8000/models")
-    if response.status_code = 200:
-        if len(response.keys()) == 0:
-            st.error('Нет загруженных моделей')
+    if response.status_code == 200:
+        if (pd.DataFrame(response.json())).shape[0] == 0:
+            st.info('Нет загруженных моделей')
         else:
-            models_table = pd.DataFrame(response)
+            models_table = pd.DataFrame(response.json())
             st.success('id моделей:')
             st.dataframe(models_table)
     else:
@@ -142,8 +144,8 @@ st.markdown('### Обучение активной модели')
 #model_id_fit = st.text_input("Введите id модели", key = "model_id_fit")
 
 if st.button("Обучить активную модель"):
-    response = httpx.post("http://localhost:8000/fit")
-    if rsponse.status_code == 200:
+    response = httpx.post("http://localhost:8000/fit", timeout= None)
+    if response.status_code == 200:
         st.success(f'Модель {active_model_id} обучена')
         logger.info("Пользователь обучил активную модель")
     else:
@@ -153,14 +155,14 @@ if st.button("Обучить активную модель"):
 
 st.markdown('### Прогноз активной модели')
 
-date_time_forecast = st.text_input("Введите начальную дату и время прогноза в формате YYYY:MM:DD HH:MM:SS",
+date_time_forecast = st.text_input("Введите начальную дату и время прогноза в формате YYYY-MM-DD HH:MM:SS",
                                    key = "date_time_forecast")
 options = {'3 часа': 3, '6 часов': 6, '9 часов': 9, '12 часов':12}
 forecast_horizon = st.selectbox("Прогноз на:", options.keys())
 
-data = pd.read_csv('data/hourly_data.csv')
-data = data[['temp', 'dt']]
-data = data.iloc[-24:, :]
+# data = pd.read_csv('data/hourly_data.csv')
+# data = data[['temp', 'dt']]
+# data = data.iloc[-24:, :]
 if st.button("Показать прогноз температуры"):
     if date_time_forecast == '':
         st.error('Дата и время прогноза не указаны')
@@ -169,39 +171,70 @@ if st.button("Показать прогноз температуры"):
         params = {"start_time": date_time_forecast}
         response = httpx.post("http://localhost:8000/predict", json = params)
         if response.status_code == 200:
+            predictions_str = response.json()['predictions']
+            predictions_dict = json.loads(predictions_str)
+# Преобразуем в DataFrame
+            df = pd.DataFrame(predictions_dict)
+# Преобразуем колонку 'dt' из миллисекунд в дату
+            df['dt'] = pd.to_datetime(df['dt'], unit='ms')
+            hourly_data = df.iloc[:-12, :]
+            df_forescast = df.iloc[-12:, :]
+            if options[forecast_horizon] == 12:
+                st.dataframe(df.iloc[-12:].reset_index(drop=True))
+            else:
+                st.dataframe(df.iloc[-12:(-12 + options[forecast_horizon])].reset_index(drop=True))
             logger.info(response.text)
+            fig1 = make_subplots(
+                rows=1, cols=4,
+                column_widths=[0.25, 0.25, 0.25, 0.25],
+                row_heights=[1.0],
+                specs=[
+                    [{"type": "xy", "colspan": 4}, None, None, None]
+                ],
+                horizontal_spacing=0.05
+            )
+
+            fig1.add_trace(
+                go.Scatter(
+                    x=hourly_data['dt'], 
+                    y=hourly_data['temp'], 
+                    mode='lines', 
+                    name='Температура', 
+                    legendgroup="2",
+                    legendgrouptitle_text="Прогноз"
+                ),
+                row=1, col=1
+            )
+            fig1.add_trace(
+                go.Scatter(
+                    x=df_forescast['dt'], 
+                    y=df_forescast['temp'], 
+                    mode='lines', 
+                    name='Температура (прогноз)', 
+                    legendgroup="2",
+                    legendgrouptitle_text="Прогноз"
+                ),
+                row=1, col=1
+            )
+
+            fig1.update_xaxes(
+                title_text="Результат прогноза", 
+                title_standoff=35,
+                row=1, col=1
+            )
+
+            fig1.update_layout(
+                #title="Погодная инфографика",
+                template="plotly_dark",
+                showlegend=True,
+                legend=dict(
+                    groupclick="toggleitem",  
+                    tracegroupgap=15
+                ),
+                margin=dict(t=100, b=100, l=80, r=80)
+            )
+
+            st.plotly_chart(fig1)
         else:
             st.error(response.text)
             logger.error(response.text)
-        forecaster = NaiveForecaster(window_length=24, strategy='mean')
-        y = data['temp']
-        y.index = pd.date_range(start = min(data['dt'])[:16], end = max(data['dt'])[:16], freq="h").to_period()
-        forecaster.fit(y)
-        y_pred = forecaster.predict(fh = range(1, options[forecast_horizon] + 1))
-        st.markdown(f'#### Прогноз на {forecast_horizon} в табличном виде (\u00B0C)')
-        predict_temp_table = pd.DataFrame(y_pred)
-        predict_temp_table.columns = ['Температура']
-        st.dataframe(predict_temp_table)
-        st.markdown(f'#### Прогноз на {forecast_horizon} в виде графика')
-        fig1 = go.Figure()
-        fig1.add_trace(go.Scatter(x = y.index.to_timestamp(),
-                                  y = y,
-                                  mode = 'lines',
-                                  name = 'Историчные данные'
-                                  )
-                       )
-        fig1.add_trace(go.Scatter(x = y_pred.index.to_timestamp(),
-                                  y = y_pred,
-                                  mode = 'lines',
-                                  name = 'Прогноз'
-                                  )
-                       )
-
-        fig1.update_layout(title = 'Прогноз температуры',
-                           xaxis_title = 'Дата',
-                           yaxis_title = '\u00B0C',
-                           height = 500,
-                           width = 1000
-                           )
-        st.plotly_chart(fig1)
-        logger.info("Пользователь рассчитал прогноз погоды")

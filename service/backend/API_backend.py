@@ -115,7 +115,7 @@ class API_Backend:
             return [self.main_model.desc]
         return [self.main_model.desc, self.second_model.desc]
 
-    def predict(self, start_time: str, history_samples=0):
+    def predict(self, start_time: str, history_samples=120):
         """
         Makes predictions using the active model.
 
