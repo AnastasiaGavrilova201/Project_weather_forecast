@@ -143,7 +143,7 @@ if st.button("Установить активную модель"):
 
 st.markdown('### Обучение активной модели')
 
-#model_id_fit = st.text_input("Введите id модели", key = "model_id_fit")
+# model_id_fit = st.text_input("Введите id модели", key = "model_id_fit")
 
 if st.button("Обучить активную модель"):
     response = httpx.post("http://localhost:8000/fit", timeout=None)
@@ -228,7 +228,7 @@ if st.button("Показать прогноз температуры"):
             )
 
             fig1.update_layout(
-                #title="Погодная инфографика",
+                # title="Погодная инфографика",
                 template="plotly_dark",
                 showlegend=True,
                 legend=dict(

@@ -5,8 +5,6 @@ from API_backend import API_Backend
 import uvicorn
 import asyncio
 import os
-import csv
-import io
 
 # Инициализация бэкенда
 api_backend = API_Backend()
@@ -43,11 +41,6 @@ class PredictRequest(BaseModel):
 class PredictResponse(BaseModel):
     """Pydantic модель для ответа с предсказаниями."""
     predictions: str
-
-
-class LoadNewModelRequest(BaseModel):
-    """Pydantic модель для запроса на загрузку новой модели."""
-    model_name: str
 
 
 class LoadNewModelResponse(BaseModel):

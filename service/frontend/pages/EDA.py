@@ -152,7 +152,7 @@ fig.update_xaxes(
 )
 
 fig.update_layout(
-    #title="Погодная инфографика",
+    # title="Погодная инфографика",
     template="plotly_dark",
     showlegend=True,
     legend=dict(
