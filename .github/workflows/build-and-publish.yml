@@ -1,6 +1,12 @@
-name: Build and Push Docker Image to Docker Hub
+---
+name: build image, push to dockerhub, deploy on vm
 
-on: push
+on:  # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - '*'
+    tags:
+      - '*'
 jobs:
   backend-push_to_registry:
     name: backend build and push
@@ -22,6 +28,7 @@ jobs:
           images: |
             tfonferm/ai35_weather_forecast
           tags: |
+                type=raw,value=backend-latest
                 type=sha,prefix=backend-sha-
                 type=ref,event=tag,prefix=backend-
 
@@ -53,6 +60,7 @@ jobs:
           images: |
             tfonferm/ai35_weather_forecast
           tags: |
+                type=raw,value=frontend-latest
                 type=sha,prefix=frontend-sha-
                 type=ref,event=tag,prefix=frontend-
 
@@ -63,3 +71,38 @@ jobs:
           file: service/frontend/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
+
+  deploy:
+    name: Deploy service to host
+    runs-on: ubuntu-latest
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
+    needs:
+      - backend-push_to_registry
+      - frontend-push_to_registry
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+
+      - name: Copy docker-compose
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 89.169.156.115
+          username: weather
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          source: "service/docker-compose/docker-compose.yml"
+          target: ~/weather
+
+      - name: Pull images, copy compose
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: 89.169.156.115
+          username: weather
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd ~/weather/service/docker-compose/
+            docker compose pull
+            docker-compose down
+            docker-compose up -d

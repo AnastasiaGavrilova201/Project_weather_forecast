@@ -1,17 +1,17 @@
+---
 version: '3.9'
 
 services:
   backend:
-    image: 456ec3cad0f8 #tfonferm/ai35_weather_forecast:backend-sha-70f5130
+    image: tfonferm/ai35_weather_forecast:backend-latest
     volumes:
-      - ../backend/models:/app/models
     ports:
       - "18000:8000"
     networks:
       - service_network
 
   frontend:
-    image: 5dba2196b1a6
+    image: tfonferm/ai35_weather_forecast:frontend-latest
     depends_on:
       - backend
     ports:
