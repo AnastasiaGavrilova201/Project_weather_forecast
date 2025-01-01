@@ -21,9 +21,9 @@ jobs:
         with:
           images: |
             tfonferm/ai35_weather_forecast
-            tags: |
-            type=sha
-            type=ref,event=tag
+          tags: |
+                type=sha
+                type=ref,event=tag
 
       - name: build and push docker image to registry
         uses: docker/build-push-action@v5
