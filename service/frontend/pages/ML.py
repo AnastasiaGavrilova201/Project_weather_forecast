@@ -179,7 +179,7 @@ if st.button("Показать прогноз температуры"):
             df = pd.DataFrame(predictions_dict)
 # Преобразуем колонку 'dt' из миллисекунд в дату
             df['dt'] = pd.to_datetime(df['dt'], unit='ms')
-            hourly_data = df.iloc[:-12, :]
+            fact_data = df.iloc[:-12, :]
             df_forescast = df.iloc[-12:, :]
             if options[forecast_horizon] == 12:
                 st.dataframe(df.iloc[-12:].reset_index(drop=True))
@@ -199,8 +199,8 @@ if st.button("Показать прогноз температуры"):
 
             fig1.add_trace(
                 go.Scatter(
-                    x=hourly_data['dt'],
-                    y=hourly_data['temp'],
+                    x=fact_data['dt'],
+                    y=fact_data['temp'],
                     mode='lines',
                     name='Температура',
                     legendgroup="2",
