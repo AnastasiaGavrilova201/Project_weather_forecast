@@ -27,6 +27,7 @@ class Model:
         n_epochs (int): Number of epochs for training.
         desc (dict): Description of the model, including metadata and training status.
     """
+
     def __init__(self, table_nm, name, n_epochs=1):
         """
         Initializes the Model with a database table, model name, and training epochs.
@@ -70,7 +71,9 @@ class Model:
                 None if the model is not fitted.
         """
         if not self.model.is_fitted():
-            logger.warning("call of 'predict' for not fitted model %s", self.name)
+            logger.warning(
+                "call of 'predict' for not fitted model %s",
+                self.name)
             return None
         return self.model.predict(start_time, history_samples)
 
@@ -85,6 +88,7 @@ class API_Backend:
         second_model (Model, optional): Instance of a secondary model. Defaults to None.
         active_model (Model): The currently active model for operations.
     """
+
     def __init__(self, main_model_n_epochs=5):
         """
         Initializes the API backend with a primary model and prepares for operations.
@@ -93,7 +97,10 @@ class API_Backend:
             main_model_n_epochs (int, optional): Number of epochs for training the new model. Defaults to 5.
         """
         self.main_db_table_name = 'test_realtime_6'
-        self.main_model = Model(self.main_db_table_name, 'Main', main_model_n_epochs)
+        self.main_model = Model(
+            self.main_db_table_name,
+            'Main',
+            main_model_n_epochs)
         self.second_model = None
         self.active_model = self.main_model
         logger.debug("Api backend initialized")
@@ -133,7 +140,12 @@ class API_Backend:
             raise ValueError("Active model is not fitted.")
         return self.active_model.predict(start_time, history_samples).to_json()
 
-    def load_new_model(self, csv_path=None, table_nm='test_realtime_6', name='Second', n_epochs=5):
+    def load_new_model(
+            self,
+            csv_path=None,
+            table_nm='test_realtime_6',
+            name='Second',
+            n_epochs=5):
         """
         Loads a new model by uploading data and initializing the model.
 
@@ -143,7 +155,8 @@ class API_Backend:
             name (str, optional): Name of the new model. Defaults to 'Second'.
             n_epochs (int, optional): Number of epochs for training the new model. Defaults to 5.
         """
-        if (csv_path is not None) and (table_nm != 'test_realtime_6') and os.path.exists(f'csv_uploads/{csv_path}'):
+        if (csv_path is not None) and (table_nm !=
+                                       'test_realtime_6') and os.path.exists(f'csv_uploads/{csv_path}'):
             database = DatabaseManager(table_nm)
             if table_nm != self.main_model.table_nm:
                 database.drop_table(table_nm)

@@ -34,37 +34,39 @@ else:
     st.info("Пожалуйста, загрузите не пустой CSV-файл.")
 
 st.markdown('### Создание нового класса модели')
-model_new = st.text_input("Введите id модели", key = "model_new")
+model_new = st.text_input("Введите id модели", key="model_new")
 st.markdown('##### Введите гиперпараметры новой модели')
 past_history = st.number_input("Укажите past_history модели",
-                               value = 720)
+                               value=720)
 step = st.number_input("Укажите step модели",
-                       value = 6,
-                       min_value = 1)
+                       value=6,
+                       min_value=1)
 batch_size = st.number_input("Укажите batch_size модели",
-                             value = 256,
-                             min_value = 1)
+                             value=256,
+                             min_value=1)
 buffer_size = st.number_input("Укажите buffer_size модели",
-                              value = 10000)
+                              value=10000)
 train_split = st.number_input("Укажите train_split модели",
-                              value = 300000)
+                              value=300000)
 evaluation_interval = st.number_input("Укажите evaluation_interval модели",
-                                      value = 200)
+                                      value=200)
 epochs = st.number_input("Укажите epochs модели",
-                         value = 10,
-                         min_value = 1)
+                         value=10,
+                         min_value=1)
 if st.button("Создать новый класс для модели"):
     if model_new == '':
         st.error('Введите id модели')
         logger.warning("Нет id модели для создания нового класса")
     else:
         params = {
-            #"csv_path": file_name,
-            #"table_nm": model_new,
+            # "csv_path": file_name,
+            # "table_nm": model_new,
             "model_name": model_new,
             "n_epochs": epochs
         }
-        response = httpx.post("http://localhost:8000/load_new_model", json = params)
+        response = httpx.post(
+            "http://localhost:8000/load_new_model",
+            json=params)
         if response.status_code == 200:
             st.success(f'Создан новый класс для модели {model_new}')
             logger.info("Пользователь создал новый класс модели")
@@ -76,32 +78,32 @@ if st.button("Создать новый класс для модели"):
 st.header("Предобученная модель")
 st.markdown('##### Параметры LSTM-модели')
 params = {'Параметр':
-              ['past_history', 'step', 'batch_size',
-               'buffer_size','train_split',
-               'evaluation_interval','epochs'],
-          'Значение' : [720, 6, 256, 10000, 300000, 200, 10]}
+          ['past_history', 'step', 'batch_size',
+           'buffer_size', 'train_split',
+           'evaluation_interval', 'epochs'],
+          'Значение': [720, 6, 256, 10000, 300000, 200, 10]}
 
 st.dataframe(pd.DataFrame(params))
 
 lstm_hist = pd.read_csv('data/lstm_temp_history.csv')
 fig = go.Figure()
-fig.add_trace(go.Scatter(x = lstm_hist['loss'].index+1,
-                         y = lstm_hist['loss'],
-                         mode = 'lines',
-                         name = 'Тренировочные данные'
+fig.add_trace(go.Scatter(x=lstm_hist['loss'].index + 1,
+                         y=lstm_hist['loss'],
+                         mode='lines',
+                         name='Тренировочные данные'
                          )
               )
-fig.add_trace(go.Scatter(x = lstm_hist['val_loss'].index + 1,
-                         y = lstm_hist['val_loss'],
-                         mode = 'lines',
-                         name = 'Валидационные данные'
+fig.add_trace(go.Scatter(x=lstm_hist['val_loss'].index + 1,
+                         y=lstm_hist['val_loss'],
+                         mode='lines',
+                         name='Валидационные данные'
                          )
               )
-fig.update_layout(title = 'Кривая обучения',
-                  xaxis_title = 'Эпоха',
-                  yaxis_title = 'Потери (MAE)',
-                  height = 500,
-                  width = 1000
+fig.update_layout(title='Кривая обучения',
+                  xaxis_title='Эпоха',
+                  yaxis_title='Потери (MAE)',
+                  height=500,
+                  width=1000
                   )
 st.plotly_chart(fig)
 
@@ -144,7 +146,7 @@ st.markdown('### Обучение активной модели')
 #model_id_fit = st.text_input("Введите id модели", key = "model_id_fit")
 
 if st.button("Обучить активную модель"):
-    response = httpx.post("http://localhost:8000/fit", timeout= None)
+    response = httpx.post("http://localhost:8000/fit", timeout=None)
     if response.status_code == 200:
         st.success(f'Модель {active_model_id} обучена')
         logger.info("Пользователь обучил активную модель")
@@ -155,9 +157,10 @@ if st.button("Обучить активную модель"):
 
 st.markdown('### Прогноз активной модели')
 
-date_time_forecast = st.text_input("Введите начальную дату и время прогноза в формате YYYY-MM-DD HH:MM:SS",
-                                   key = "date_time_forecast")
-options = {'3 часа': 3, '6 часов': 6, '9 часов': 9, '12 часов':12}
+date_time_forecast = st.text_input(
+    "Введите начальную дату и время прогноза в формате YYYY-MM-DD HH:MM:SS",
+    key="date_time_forecast")
+options = {'3 часа': 3, '6 часов': 6, '9 часов': 9, '12 часов': 12}
 forecast_horizon = st.selectbox("Прогноз на:", options.keys())
 
 # data = pd.read_csv('data/hourly_data.csv')
@@ -169,7 +172,7 @@ if st.button("Показать прогноз температуры"):
         logger.warning("Нет даты и времени для предсказания")
     else:
         params = {"start_time": date_time_forecast}
-        response = httpx.post("http://localhost:8000/predict", json = params)
+        response = httpx.post("http://localhost:8000/predict", json=params)
         if response.status_code == 200:
             predictions_str = response.json()['predictions']
             predictions_dict = json.loads(predictions_str)
@@ -182,7 +185,8 @@ if st.button("Показать прогноз температуры"):
             if options[forecast_horizon] == 12:
                 st.dataframe(df.iloc[-12:].reset_index(drop=True))
             else:
-                st.dataframe(df.iloc[-12:(-12 + options[forecast_horizon])].reset_index(drop=True))
+                st.dataframe(
+                    df.iloc[-12:(-12 + options[forecast_horizon])].reset_index(drop=True))
             logger.info(response.text)
             fig1 = make_subplots(
                 rows=1, cols=4,
@@ -196,10 +200,10 @@ if st.button("Показать прогноз температуры"):
 
             fig1.add_trace(
                 go.Scatter(
-                    x=hourly_data['dt'], 
-                    y=hourly_data['temp'], 
-                    mode='lines', 
-                    name='Температура', 
+                    x=hourly_data['dt'],
+                    y=hourly_data['temp'],
+                    mode='lines',
+                    name='Температура',
                     legendgroup="2",
                     legendgrouptitle_text="Прогноз"
                 ),
@@ -207,10 +211,10 @@ if st.button("Показать прогноз температуры"):
             )
             fig1.add_trace(
                 go.Scatter(
-                    x=df_forescast['dt'], 
-                    y=df_forescast['temp'], 
-                    mode='lines', 
-                    name='Температура (прогноз)', 
+                    x=df_forescast['dt'],
+                    y=df_forescast['temp'],
+                    mode='lines',
+                    name='Температура (прогноз)',
                     legendgroup="2",
                     legendgrouptitle_text="Прогноз"
                 ),
@@ -218,7 +222,7 @@ if st.button("Показать прогноз температуры"):
             )
 
             fig1.update_xaxes(
-                title_text="Результат прогноза", 
+                title_text="Результат прогноза",
                 title_standoff=35,
                 row=1, col=1
             )
@@ -228,7 +232,7 @@ if st.button("Показать прогноз температуры"):
                 template="plotly_dark",
                 showlegend=True,
                 legend=dict(
-                    groupclick="toggleitem",  
+                    groupclick="toggleitem",
                     tracegroupgap=15
                 ),
                 margin=dict(t=100, b=100, l=80, r=80)

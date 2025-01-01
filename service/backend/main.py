@@ -11,6 +11,7 @@ import io
 # Инициализация бэкенда
 api_backend = API_Backend()
 
+
 class ModelDesc(BaseModel):
     """Pydantic модель для описания модели."""
     name: str
@@ -18,50 +19,61 @@ class ModelDesc(BaseModel):
     n_epochs: int
     fitted: bool
 
+
 class SetActiveModelRequest(BaseModel):
     """Pydantic модель для запроса на установку активной модели."""
     model_name: str
+
 
 class SetActiveModelResponse(BaseModel):
     """Pydantic модель для ответа на установку активной модели."""
     message: str
 
+
 class FitModelResponse(BaseModel):
     """Pydantic модель для ответа после запуска обучения модели."""
     message: str
+
 
 class PredictRequest(BaseModel):
     """Pydantic модель для запроса на предсказание."""
     start_time: str
 
+
 class PredictResponse(BaseModel):
     """Pydantic модель для ответа с предсказаниями."""
     predictions: str
+
 
 class LoadNewModelRequest(BaseModel):
     """Pydantic модель для запроса на загрузку новой модели."""
     model_name: str
 
+
 class LoadNewModelResponse(BaseModel):
     """Pydantic модель для ответа после загрузки новой модели."""
     message: str
+
 
 class CSVContent(BaseModel):
     """Pydantic модель для представления содержимого CSV."""
     file_name: str
     content: str
 
+
 class LoadNewModelRequest(BaseModel):
     """Pydantic модель для запроса на загрузку новой модели."""
     csv_path: Optional[str] = None
-    table_nm: Optional[str] = 'test_realtime_6'  
+    table_nm: Optional[str] = 'test_realtime_6'
     model_name: str
     n_epochs: int
+
 
 app = FastAPI(
     docs_url="/api/openapi",
     openapi_url="/api/openapi.json"
 )
+
 
 @app.get("/models", response_model=List[ModelDesc])
 async def get_models() -> List[ModelDesc]:
@@ -74,6 +86,7 @@ async def get_models() -> List[ModelDesc]:
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/set_model", response_model=SetActiveModelResponse)
 async def set_active_model(request: SetActiveModelRequest) -> SetActiveModelResponse:
     """Устанавливает активную модель по имени."""
@@ -85,6 +98,7 @@ async def set_active_model(request: SetActiveModelRequest) -> SetActiveModelResp
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/fit", response_model=FitModelResponse)
 async def fit_model() -> FitModelResponse:
     """Запускает обучение активной модели."""
@@ -95,9 +109,12 @@ async def fit_model() -> FitModelResponse:
         await asyncio.wait_for(train(), timeout=10.0)
         return {"message": "Model training completed"}
     except asyncio.TimeoutError:
-        raise HTTPException(status_code=408, detail="Model training took too long and was aborted")
+        raise HTTPException(
+            status_code=408,
+            detail="Model training took too long and was aborted")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/predict", response_model=PredictResponse)
 async def predict(request: PredictRequest) -> PredictResponse:
@@ -110,6 +127,7 @@ async def predict(request: PredictRequest) -> PredictResponse:
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/load_new_model", response_model=LoadNewModelResponse)
 async def load_new_model(request: LoadNewModelRequest) -> LoadNewModelResponse:
     """
@@ -117,19 +135,25 @@ async def load_new_model(request: LoadNewModelRequest) -> LoadNewModelResponse:
     """
     try:
         if request.csv_path is not None:
-            csv_path = 'csv_uploads/'+request.csv_path
+            csv_path = 'csv_uploads/' + request.csv_path
         else:
             csv_path = None
-        api_backend.load_new_model(csv_path, request.table_nm, request.model_name, request.n_epochs)
+        api_backend.load_new_model(
+            csv_path,
+            request.table_nm,
+            request.model_name,
+            request.n_epochs)
         return {"message": "New model loaded successfully"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Invalid data. Error: {str(e)}")
+        raise HTTPException(status_code=500,
+                            detail=f"Invalid data. Error: {str(e)}")
 
 
 # Создаем директорию для сохранения загруженных файлов, если она не существует
 os.makedirs("csv_uploads", exist_ok=True)
+
 
 @app.post("/upload_csv")
 async def upload_csv(file: UploadFile = File(...)) -> dict:
@@ -141,19 +165,23 @@ async def upload_csv(file: UploadFile = File(...)) -> dict:
 
     Возвращает:
         dict: Ответ с подтверждением успешной загрузки и именем файла.
-    
+
     Raises:
         HTTPException: При ошибке сохранения файла.
     """
     try:
         if not file.filename.endswith('.csv'):
-            raise HTTPException(status_code=400, detail="Only CSV files are accepted.")
+            raise HTTPException(
+                status_code=400,
+                detail="Only CSV files are accepted.")
         file_location = f"csv_uploads/{file.filename}"
         with open(file_location, "wb") as file_object:
             file_object.write(await file.read())
         return {"message": f"CSV file '{file.filename}' uploaded successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to upload the CSV file: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to upload the CSV file: {str(e)}")
 
 
 # Запуск сервера

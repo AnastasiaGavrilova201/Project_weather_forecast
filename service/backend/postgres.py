@@ -23,6 +23,7 @@ class DatabaseManager:
         db_user (str): Username for the database connection.
         features (dict): Dictionary with features and their types.
     """
+
     def __init__(self, table_nm):
         """
         Initializes the DatabaseManager with a table name and default configurations.
@@ -94,7 +95,8 @@ class DatabaseManager:
                 curs.execute(query)
                 if need_fetch:
                     data = curs.fetchall()
-                    df = pd.concat([pd.DataFrame(data, columns=header)], ignore_index=True)
+                    df = pd.concat(
+                        [pd.DataFrame(data, columns=header)], ignore_index=True)
                     return df
         return None
 
@@ -194,7 +196,9 @@ class DatabaseManager:
 
         if table_nm is None:
             table_nm = self.table_nm
-        return self._execute(f'SELECT {",".join(header)} FROM public.{table_nm} {additional_options}', header)
+        return self._execute(
+            f'SELECT {",".join(header)} FROM public.{table_nm} {additional_options}',
+            header)
 
     def _get_feature(self, data, feature_nm, feature_type):
         """
@@ -230,7 +234,11 @@ class DatabaseManager:
                 formatted_value = f"'{dt.isoformat(sep=' ')}'"
         return formatted_value
 
-    def insert_data(self, data_dict, feature_replacement_mapping=None, table_nm=None):
+    def insert_data(
+            self,
+            data_dict,
+            feature_replacement_mapping=None,
+            table_nm=None):
         """
         Inserts a single record into the database.
 
@@ -248,7 +256,8 @@ class DatabaseManager:
         values = []
         for k, v in self.features.items():
             if feature_replacement_mapping is not None:
-                formatted_value = self._get_feature(data_dict, feature_replacement_mapping.get(k, k), v)
+                formatted_value = self._get_feature(
+                    data_dict, feature_replacement_mapping.get(k, k), v)
             else:
                 formatted_value = self._get_feature(data_dict, k, v)
             if formatted_value is not None:
@@ -257,7 +266,11 @@ class DatabaseManager:
         self._execute(f'''INSERT INTO {table_nm} (
         {', '.join(headers)}) VALUES ({', '.join(values)})''', need_fetch=False)
 
-    def insert_data_batch(self, data_list, feature_replacement_mapping=None, table_nm=None):
+    def insert_data_batch(
+            self,
+            data_list,
+            feature_replacement_mapping=None,
+            table_nm=None):
         """
         Inserts multiple records into the database.
 
@@ -277,7 +290,8 @@ class DatabaseManager:
             values = []
             for k, v in self.features.items():
                 if feature_replacement_mapping is not None:
-                    formatted_value = self._get_feature(data_dict, feature_replacement_mapping.get(k, k), v)
+                    formatted_value = self._get_feature(
+                        data_dict, feature_replacement_mapping.get(k, k), v)
                 else:
                     formatted_value = self._get_feature(data_dict, k, v)
                 if formatted_value is not None:
