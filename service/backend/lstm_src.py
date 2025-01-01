@@ -4,7 +4,8 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from tensorflow.keras.metrics import MeanAbsoluteError
+import keras
+from keras.metrics import MeanAbsoluteError
 
 from log import Logger
 
@@ -202,11 +203,11 @@ class Temp:
             (self.datasets['x_val'],
              self.datasets['y_val'])).batch(self.hyperparameters['BATCH_SIZE']).repeat()
 
-        model = tf.keras.models.Sequential()
-        model.add(tf.keras.layers.LSTM(32, return_sequences=True, input_shape=self.datasets['x_train'].shape[-2:]))
-        model.add(tf.keras.layers.LSTM(16, activation='relu'))
-        model.add(tf.keras.layers.Dense(72))
-        model.compile(optimizer=tf.keras.optimizers.RMSprop(clipvalue=1.0), loss='mae', metrics=[MeanAbsoluteError()])
+        model = keras.models.Sequential()
+        model.add(keras.layers.LSTM(32, return_sequences=True, input_shape=self.datasets['x_train'].shape[-2:]))
+        model.add(keras.layers.LSTM(16, activation='relu'))
+        model.add(keras.layers.Dense(72))
+        model.compile(optimizer=keras.optimizers.RMSprop(clipvalue=1.0), loss='mae', metrics=[MeanAbsoluteError()])
 
         history = model.fit(
             train_data,
@@ -216,7 +217,7 @@ class Temp:
             validation_steps=50
         )
 
-        tf.keras.models.save_model(model, self.model_filename)
+        keras.models.save_model(model, self.model_filename)
 
         history_df = pd.DataFrame(history.history)
         history_df['date'] = datetime.now()
@@ -358,7 +359,7 @@ class Temp:
             tuple: Date range and predicted values.
         """
         val_data = tf.data.Dataset.from_tensor_slices((x_val, y_val)).batch(self.hyperparameters['BATCH_SIZE'])
-        model = tf.keras.models.load_model(self.model_filename)
+        model = keras.models.load_model(self.model_filename)
 
         predictions = model.predict(val_data)
         predictions = (
