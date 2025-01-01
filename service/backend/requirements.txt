@@ -3,8 +3,7 @@ pandas==2.2.3
 psycopg2==2.9.7
 pydantic==2.10.4
 pytz==2024.1
-tensorflow
-keras
-fastapi==0.103.2
-uvicorn 
-python-multipart
+tensorflow==2.15.0
+fastapi==0.115.6
+uvicorn==0.34.0
+python-multipart==0.0.20
