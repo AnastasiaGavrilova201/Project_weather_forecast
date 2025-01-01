@@ -1,10 +1,10 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
-from pydantic import BaseModel
 from typing import List, Optional
-from API_backend import API_Backend
-import uvicorn
 import asyncio
 import os
+from fastapi import FastAPI, HTTPException, UploadFile, File
+from pydantic import BaseModel
+from API_backend import API_Backend
+import uvicorn
 
 # Инициализация бэкенда
 api_backend = API_Backend()
@@ -77,7 +77,7 @@ async def get_models() -> List[ModelDesc]:
             raise HTTPException(status_code=404, detail="No models loaded")
         return models
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/set_model", response_model=SetActiveModelResponse)
@@ -87,9 +87,9 @@ async def set_active_model(request: SetActiveModelRequest) -> SetActiveModelResp
         api_backend.set_active(request.model_name)
         return {"message": f"Active model set to {request.model_name}"}
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/fit", response_model=FitModelResponse)
@@ -101,12 +101,12 @@ async def fit_model() -> FitModelResponse:
 
         await asyncio.wait_for(train(), timeout=10.0)
         return {"message": "Model training completed"}
-    except asyncio.TimeoutError:
+    except asyncio.TimeoutError as e:
         raise HTTPException(
             status_code=408,
-            detail="Model training took too long and was aborted")
+            detail="Model training took too long and was aborted") from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/predict", response_model=PredictResponse)
@@ -116,9 +116,9 @@ async def predict(request: PredictRequest) -> PredictResponse:
         predictions = api_backend.predict(request.start_time)
         return {"predictions": predictions}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/load_new_model", response_model=LoadNewModelResponse)
@@ -138,10 +138,10 @@ async def load_new_model(request: LoadNewModelRequest) -> LoadNewModelResponse:
             request.n_epochs)
         return {"message": "New model loaded successfully"}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500,
-                            detail=f"Invalid data. Error: {str(e)}")
+                            detail=f"Invalid data. Error: {str(e)}") from e
 
 
 # Создаем директорию для сохранения загруженных файлов, если она не существует
@@ -174,7 +174,7 @@ async def upload_csv(file: UploadFile = File(...)) -> dict:
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to upload the CSV file: {str(e)}")
+            detail=f"Failed to upload the CSV file: {str(e)}") from e
 
 
 # Запуск сервера

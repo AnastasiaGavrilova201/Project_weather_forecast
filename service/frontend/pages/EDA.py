@@ -1,9 +1,9 @@
-import streamlit as st
-import pandas as pd
-import plotly.graph_objects as go
-from sktime.forecasting.naive import NaiveForecaster
+import streamlit as st  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
+import plotly.graph_objects as go  # pylint: disable=import-error
+from sktime.forecasting.naive import NaiveForecaster  # pylint: disable=import-error
 from log import Logger
-from plotly.subplots import make_subplots
+from plotly.subplots import make_subplots  # pylint: disable=import-error
 
 logger = Logger(__name__).get_logger()
 
@@ -155,11 +155,9 @@ fig.update_layout(
     # title="Погодная инфографика",
     template="plotly_dark",
     showlegend=True,
-    legend=dict(
-        groupclick="toggleitem",
-        tracegroupgap=15
-    ),
-    margin=dict(t=100, b=100, l=80, r=80)
+    legend={"groupclick": 'toggleitem',
+            "tracegroupgap": 15},
+    margin={"t": 100, "b": 100, "l": 80, "r": 80}
 )
 
 st.plotly_chart(fig)
@@ -168,6 +166,10 @@ data = data.iloc[:120, :]
 
 
 def graph(column):
+    """
+    Построение графика по показателю
+    """
+
     forecaster = NaiveForecaster(window_length=24, strategy='mean')
     y = data[column]
     y.index = pd.date_range(
