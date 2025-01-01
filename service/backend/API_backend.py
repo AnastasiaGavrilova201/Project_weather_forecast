@@ -5,7 +5,7 @@ from postgres import DatabaseManager
 from utils import CsvToDatabase
 from log import Logger
 
-import tensorflow as tf  # pylint: disable=import-error
+import tensorflow as tf
 
 if len(tf.config.list_physical_devices('GPU')) == 0:
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"

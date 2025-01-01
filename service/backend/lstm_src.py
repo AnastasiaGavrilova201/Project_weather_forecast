@@ -3,8 +3,8 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-import tensorflow as tf  # pylint: disable=import-error
-from tensorflow.keras.metrics import MeanAbsoluteError  # pylint: disable=import-error
+import tensorflow as tf
+from tensorflow.keras.metrics import MeanAbsoluteError
 
 from log import Logger
 
