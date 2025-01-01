@@ -1,10 +1,8 @@
 from datetime import datetime
-import os
 import psycopg2
 import pytz
 import pandas as pd
 import numpy as np
-
 from log import Logger
 
 logger = Logger(__name__).get_logger()

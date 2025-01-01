@@ -1,12 +1,10 @@
 import os
 from datetime import datetime
-
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 import keras
 from keras.metrics import MeanAbsoluteError
-
 from log import Logger
 
 logger = Logger(__name__).get_logger()

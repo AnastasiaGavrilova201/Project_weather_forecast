@@ -198,6 +198,7 @@ if st.button("Показать прогноз температуры"):
             )
 
             fig1.add_trace(
+                # pylint: disable=duplicate-code
                 go.Scatter(
                     x=fact_data['dt'],
                     y=fact_data['temp'],

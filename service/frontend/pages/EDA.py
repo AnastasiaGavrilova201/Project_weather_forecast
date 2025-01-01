@@ -5,6 +5,7 @@ from sktime.forecasting.naive import NaiveForecaster  # pylint: disable=import-e
 from log import Logger
 from plotly.subplots import make_subplots  # pylint: disable=import-error
 
+
 logger = Logger(__name__).get_logger()
 
 st.title("EDA")
@@ -100,6 +101,7 @@ fig.add_trace(go.Indicator(
 ), row=1, col=4)
 
 fig.add_trace(
+    # pylint: disable=duplicate-code
     go.Scatter(
         x=hourly_data['dt'],
         y=hourly_data['temp'],

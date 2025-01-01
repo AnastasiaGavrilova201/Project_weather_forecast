@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from API_backend import API_Backend
 import uvicorn
 
+
 # Инициализация бэкенда
 api_backend = API_Backend()
 
