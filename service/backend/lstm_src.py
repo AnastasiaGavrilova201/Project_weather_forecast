@@ -39,6 +39,7 @@ class Temp:
             - 'y_val' (np.array or None): Target labels for validation.
         model_filename (str): File path to save or load the trained model.
     """
+
     def __init__(self, model_name, database=None, n_epochs=10):
         """
         Initializes the Temp class with model configuration and data processing parameters.
@@ -123,16 +124,29 @@ class Temp:
         Prepares and normalizes the dataset for training and validation.
         """
         if self.database:
-            df = self.database.select(header=['dt', 'temp'], additional_options="where dt < '2024-01-01' order by dt")
-            df['dt'] = df['dt'].apply(lambda row: str(row).split('+', maxsplit=1)[0])
+            df = self.database.select(
+                header=[
+                    'dt',
+                    'temp'],
+                additional_options="where dt < '2024-01-01' order by dt")
+            df['dt'] = df['dt'].apply(
+                lambda row: str(row).split(
+                    '+', maxsplit=1)[0])
             df['temp'] = df['temp'].astype(np.float64)
         else:
             df = pd.read_csv('./tmp/tes_osnova.csv')
         ss = pd.read_csv('./tmp/sunrise_sunset_2026.csv').iloc[:, 1:]
 
         ss['date'] = ss['date'] + ' 00:00:00'
-        df = df.merge(ss, left_on='dt', right_on='date', how='left').drop('date', axis=1)
-        df = df[['dt', 'diff_rise_set', 'temp', 'new_feature_1', 'new_feature_2']]
+        df = df.merge(
+            ss,
+            left_on='dt',
+            right_on='date',
+            how='left').drop(
+            'date',
+            axis=1)
+        df = df[['dt', 'diff_rise_set', 'temp',
+                 'new_feature_1', 'new_feature_2']]
         df['dt'] = pd.to_datetime(df['dt'])
         df.set_index('dt', inplace=True)
 
@@ -140,13 +154,17 @@ class Temp:
             logger.warning("Обнаружены дубликаты!")
             df = df[~df.index.duplicated(keep='first')]
 
-        new_index = pd.date_range(start=df.index.min(), end=df.index.max(), freq='10T')
+        new_index = pd.date_range(
+            start=df.index.min(),
+            end=df.index.max(),
+            freq='10T')
         features = df.reindex(new_index)
         features = features.interpolate(method='linear')
         features.reset_index(inplace=True)
         features.rename(columns={'index': 'dt'}, inplace=True)
         features = features[features['dt'] < '2024-01-01 00:00:00'].dropna()
-        total_samples = self.hyperparameters['TRAIN_SPLIT'] + self.hyperparameters['VAL_SIZE']
+        total_samples = self.hyperparameters['TRAIN_SPLIT'] + \
+            self.hyperparameters['VAL_SIZE']
         features = features[-total_samples:].reset_index(drop=True)
         features = features.round(3)
         features.set_index('dt', inplace=True)
@@ -164,7 +182,8 @@ class Temp:
         if np.any(self.hyperparameters['data_std'] == 0):
             logger.warning("Стандартное отклонение равно нулю!")
 
-        dataset = (dataset-self.hyperparameters['data_mean']) / self.hyperparameters['data_std']
+        dataset = (
+            dataset - self.hyperparameters['data_mean']) / self.hyperparameters['data_std']
 
         self.datasets['x_train'], self.datasets['y_train'] = self._multivariate_data(
             dataset,
@@ -200,14 +219,18 @@ class Temp:
                  self.hyperparameters['BATCH_SIZE']).repeat()
 
         val_data = tf.data.Dataset.from_tensor_slices(
-            (self.datasets['x_val'],
-             self.datasets['y_val'])).batch(self.hyperparameters['BATCH_SIZE']).repeat()
+            (self.datasets['x_val'], self.datasets['y_val'])).batch(
+            self.hyperparameters['BATCH_SIZE']).repeat()
 
         model = keras.models.Sequential()
-        model.add(keras.layers.LSTM(32, return_sequences=True, input_shape=self.datasets['x_train'].shape[-2:]))
+        model.add(keras.layers.LSTM(32, return_sequences=True,
+                  input_shape=self.datasets['x_train'].shape[-2:]))
         model.add(keras.layers.LSTM(16, activation='relu'))
         model.add(keras.layers.Dense(72))
-        model.compile(optimizer=keras.optimizers.RMSprop(clipvalue=1.0), loss='mae', metrics=[MeanAbsoluteError()])
+        model.compile(
+            optimizer=keras.optimizers.RMSprop(
+                clipvalue=1.0), loss='mae', metrics=[
+                MeanAbsoluteError()])
 
         history = model.fit(
             train_data,
@@ -221,10 +244,15 @@ class Temp:
 
         history_df = pd.DataFrame(history.history)
         history_df['date'] = datetime.now()
-        history_df['loading_id'] = history_df['date'].apply(lambda row: row.timestamp())
+        history_df['loading_id'] = history_df['date'].apply(
+            lambda row: row.timestamp())
 
         if os.path.exists('./report/lstm_temp_history.csv'):
-            history_df.to_csv('./report/lstm_temp_history.csv', mode='a', header=False, index=False)
+            history_df.to_csv(
+                './report/lstm_temp_history.csv',
+                mode='a',
+                header=False,
+                index=False)
         else:
             history_df.to_csv('./report/lstm_temp_history.csv', index=False)
 
@@ -255,7 +283,8 @@ class Temp:
         end_index = len(dataset) - target_size
         start_index = end_index - history_size
         if start_index < 0:
-            raise ValueError("History size is too large for the given dataset.")
+            raise ValueError(
+                "History size is too large for the given dataset.")
 
         indices = range(start_index, end_index, step)
         data.append(dataset[indices])
@@ -276,13 +305,19 @@ class Temp:
         """
         if self.database:
             logger.debug('using data from database')
-            df = self.database.select(header=['dt', 'temp'], additional_options="where dt > '2024-01-01' order by dt")
+            df = self.database.select(
+                header=[
+                    'dt',
+                    'temp'],
+                additional_options="where dt > '2024-01-01' order by dt")
             df['temp'] = df['temp'].astype(np.float64)
         else:
             df = pd.read_csv('./tmp/test_realtime_2.csv')
         logger.info('Последняя дата в датафрейме : %s', df["dt"].max())
         df = df.dropna(axis=1)
-        df['dt'] = df['dt'].apply(lambda row: str(row).split('+', maxsplit=1)[0])
+        df['dt'] = df['dt'].apply(
+            lambda row: str(row).split(
+                '+', maxsplit=1)[0])
         return df
 
     def _get_history_data(self, start, history_samples, df):
@@ -314,13 +349,24 @@ class Temp:
         """
         ss = pd.read_csv('./tmp/sunrise_sunset_2026.csv').iloc[:, 1:]
         ss['date'] = ss['date'] + ' 00:00:00'
-        ss2 = ss[ss['date'] >= start][['date', 'diff_rise_set', 'new_feature_1', 'new_feature_2']].head(3).copy()
-        df = df.merge(ss, left_on='dt', right_on='date', how='left').drop('date', axis=1)
-        df = df[['dt', 'diff_rise_set', 'temp', 'new_feature_1', 'new_feature_2']]
+        ss2 = ss[ss['date'] >= start][['date', 'diff_rise_set',
+                                       'new_feature_1', 'new_feature_2']].head(3).copy()
+        df = df.merge(
+            ss,
+            left_on='dt',
+            right_on='date',
+            how='left').drop(
+            'date',
+            axis=1)
+        df = df[['dt', 'diff_rise_set', 'temp',
+                 'new_feature_1', 'new_feature_2']]
         df['dt'] = pd.to_datetime(df['dt'])
         df.set_index('dt', inplace=True)
 
-        new_index = pd.date_range(start=df.index.min(), end=df.index.max(), freq='10T')
+        new_index = pd.date_range(
+            start=df.index.min(),
+            end=df.index.max(),
+            freq='10T')
         features = df.reindex(new_index)
         features = features.interpolate(method='linear')
         features.reset_index(inplace=True)
@@ -331,7 +377,10 @@ class Temp:
         last_12_values = features['temp'].tail(72).tolist()
         ss2['date'] = pd.to_datetime(ss2['date'])
         ss2.set_index('date', inplace=True)
-        new_index = pd.date_range(start=ss2.index.min(), end=ss2.index.max(), freq='10T')
+        new_index = pd.date_range(
+            start=ss2.index.min(),
+            end=ss2.index.max(),
+            freq='10T')
         features2 = ss2.reindex(new_index).interpolate(method='time')
         features2 = features2.head(72)
         features2.insert(1, 'temp', last_12_values)
@@ -339,7 +388,8 @@ class Temp:
         features = pd.concat([features, features2])
 
         dataset = features.values
-        dataset = (dataset-self.hyperparameters['data_mean']) / self.hyperparameters['data_std']
+        dataset = (
+            dataset - self.hyperparameters['data_mean']) / self.hyperparameters['data_std']
 
         x_val, y_val = self._multivariate_data2(dataset,
                                                 dataset[:, 1],
@@ -358,7 +408,9 @@ class Temp:
         Returns:
             tuple: Date range and predicted values.
         """
-        val_data = tf.data.Dataset.from_tensor_slices((x_val, y_val)).batch(self.hyperparameters['BATCH_SIZE'])
+        val_data = tf.data.Dataset.from_tensor_slices(
+            (x_val, y_val)).batch(
+            self.hyperparameters['BATCH_SIZE'])
         model = keras.models.load_model(self.model_filename)
 
         predictions = model.predict(val_data)
@@ -374,7 +426,12 @@ class Temp:
             average = np.round(np.mean(group), 2)
             averages.append(average)
 
-        date_range = pd.date_range(start=start, end=pd.to_datetime(start) + pd.Timedelta(hours=11), freq='H')
+        date_range = pd.date_range(
+            start=start,
+            end=pd.to_datetime(start) +
+            pd.Timedelta(
+                hours=11),
+            freq='H')
         return date_range, averages
 
     def predict(self, start, history_samples=0):
@@ -390,13 +447,15 @@ class Temp:
         """
         raw_data = self._get_raw_data()
         if history_samples > 0:
-            history_data = self._get_history_data(start, history_samples, raw_data.copy())
+            history_data = self._get_history_data(
+                start, history_samples, raw_data.copy())
         x_val, y_val = self._prepare_data_for_predict(start, raw_data)
         date_range, averages = self._predict(start, x_val, y_val)
         forecast = pd.DataFrame({'dt': date_range, 'temp': averages})
         if history_samples > 0:
             print(history_samples)
-            return pd.concat([history_data, forecast], ignore_index=True, axis=0)
+            return pd.concat([history_data, forecast],
+                             ignore_index=True, axis=0)
         return forecast
 
     def is_fitted(self):
