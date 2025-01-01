@@ -15,10 +15,20 @@ jobs:
           username: ${{secrets.DOCKER_USERNAME}}
           password: ${{secrets.DOCKER_PASSWORD}}
 
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            tfonferm/ai35_weather_forecast
+            tags: |
+            type=sha
+            type=ref,event=tag
+
       - name: build and push docker image to registry
         uses: docker/build-push-action@v5
         with:
           context: .
           file: service/backend/Dockerfile
           push: true
-          tags: tfonferm/ai35_weather_forecast:$(git rev-parse --short HEAD)
+          tags: ${{ steps.meta.outputs.tags }}
