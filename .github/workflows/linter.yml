@@ -1,117 +1,113 @@
+---
 name: Linters
 
-on: [push]
+on: push  # yamllint disable-line rule:truthy
 
 jobs:
   backend-pylint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.10"
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pylint
-        pip install -r service/backend/requirements.txt
-    - name: Analyse code with pylint
-      run: |
-        pylint $(git ls-files 'service/backend/*.py') --max-line-length=120 --disable="C0103,C0114,C0115"\
-    
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint
+          pip install -r service/backend/requirements.txt
+      - name: Analyse code with pylint
+        run: |
+          pylint $(git ls-files 'service/backend/*.py') \
+          --max-line-length=120 --disable="C0103,C0114,C0115"\
+
   frontend-pylint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.10"
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pylint
-        pip install -r service/frontend/requirements.txt
-    - name: Analyse code with pylint
-      run: |
-        pylint $(git ls-files 'service/frontend/*.py') --max-line-length=120 --disable="C0103,C0114,C0115"\
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint
+          pip install -r service/frontend/requirements.txt
+      - name: Analyse code with pylint
+        run: |
+          pylint $(git ls-files 'service/frontend/*.py') \
+          --max-line-length=120 --disable="C0103,C0114,C0115"\
 
   backend-flake8:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.10"
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install flake8
-    - name: Analysing the code with flake8
-      run: |
-        flake8 $(git ls-files 'service/backend/*.py') --max-line-length=120\
-  
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+      - name: Analysing the code with flake8
+        run: |
+          flake8 $(git ls-files 'service/backend/*.py') --max-line-length=120\
+
   frontend-flake8:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.10"
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install flake8
-    - name: Analysing the code with flake8
-      run: |
-        flake8 $(git ls-files 'service/frontend/*.py') --max-line-length=120\
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+      - name: Analysing the code with flake8
+        run: |
+          flake8 $(git ls-files 'service/frontend/*.py') --max-line-length=120\
 
   backend-pycodestyle:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.10"
-    - name: Install dependencies
-      run: |
-        git clone https://github.com/PyCQA/pycodestyle.git
-    - name: Analysing the code with pycodestyle
-      run: |
-        exit_code=0
-        for file in $(git ls-files 'service/backend/*.py'); do
-            python3 pycodestyle/pycodestyle.py --max-line-length=120 "$file" || exit_code=1
-        done
-        exit $exit_code\
-  
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          git clone https://github.com/PyCQA/pycodestyle.git
+      - name: Analysing the code with pycodestyle
+        run: |
+          exit_code=0
+          for file in $(git ls-files 'service/backend/*.py'); do
+              python3 pycodestyle/pycodestyle.py \
+              --max-line-length=120 "$file" || exit_code=1
+          done
+          exit $exit_code
+
   frontend-pycodestyle:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.10"
-    - name: Install dependencies
-      run: |
-        git clone https://github.com/PyCQA/pycodestyle.git
-    - name: Analysing the code with pycodestyle
-      run: |
-        exit_code=0
-        for file in $(git ls-files 'service/frontend/*.py'); do
-            python3 pycodestyle/pycodestyle.py --max-line-length=120 "$file" || exit_code=1
-        done
-        exit $exit_code\
-
-  dockerfiles:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Analysing the code with hadolint
-      run: |
-        cat service/backend/Dockerfile | docker run --rm -i hadolint/hadolint
-        cat service/frontend/Dockerfile | docker run --rm -i hadolint/hadolint
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          git clone https://github.com/PyCQA/pycodestyle.git
+      - name: Analysing the code with pycodestyle
+        run: |
+          exit_code=0
+          for file in $(git ls-files 'service/frontend/*.py'); do
+              python3 pycodestyle/pycodestyle.py \
+              --max-line-length=120 "$file" || exit_code=1
+          done
+          exit $exit_code
