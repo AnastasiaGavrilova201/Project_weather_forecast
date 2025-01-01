@@ -1,14 +1,23 @@
+import os
 import json
-import streamlit as st  # pylint: disable=import-error
-import pandas as pd  # pylint: disable=import-error
-import plotly.graph_objects as go  # pylint: disable=import-error
+import streamlit as st
+import pandas as pd
+import plotly.graph_objects as go
 from log import Logger
-import httpx  # pylint: disable=import-error
-from plotly.subplots import make_subplots  # pylint: disable=import-error
+import httpx
+from plotly.subplots import make_subplots
 
 logger = Logger(__name__).get_logger()
 
 logger.info("Пользователь находится на странице с ML-частью")
+
+backend_host = 'localhost'
+if 'BACKEND_HOST' in os.environ:
+    backend_host = os.environ['BACKEND_HOST']
+backend_port = 8000
+if 'BACKEND_PORT' in os.environ:
+    backend_port = os.environ['BACKEND_PORT']
+
 st.title("ML")
 st.sidebar.success("Просмотр ML-части")
 
@@ -22,7 +31,7 @@ if uploaded_file is not None:
         file_content = uploaded_file.getvalue()
         file_name = uploaded_file.name
         files = {'file': (uploaded_file.name, file_content, 'csv')}
-        response = httpx.post("http://localhost:8000/upload_csv", files=files)
+        response = httpx.post(f"http://{backend_host}:{backend_port}/upload_csv", files=files)
         if response.status_code == 200:
             st.success("Ваш CSV-файл сохранен.")
             logger.info("Пользователь загрузил csv-файл")
@@ -64,7 +73,7 @@ if st.button("Создать новый класс для модели"):
             "n_epochs": epochs
         }
         response = httpx.post(
-            "http://localhost:8000/load_new_model",
+            f"http://{backend_host}:{backend_port}/load_new_model",
             json=params)
         if response.status_code == 200:
             st.success(f'Создан новый класс для модели {model_new}')
@@ -109,7 +118,7 @@ st.plotly_chart(fig)
 st.markdown('### Загруженные модели')
 if st.button("Показать все загруженные модели"):
     logger.info("Пользователь вывел все загруженные модели")
-    response = httpx.get("http://localhost:8000/models")
+    response = httpx.get(f"http://{backend_host}:{backend_port}/models")
     if response.status_code == 200:
         if (pd.DataFrame(response.json())).shape[0] == 0:
             st.info('Нет загруженных моделей')
@@ -132,7 +141,7 @@ if st.button("Установить активную модель"):
         params = {
             "model_name": active_model_id
         }
-        response = httpx.post("http://localhost:8000/set_model", json=params)
+        response = httpx.post(f"http://{backend_host}:{backend_port}/set_model", json=params)
         if response.status_code == 200:
             st.success(f'Установлена активная модель {active_model_id}')
             logger.info(response.text)
@@ -145,7 +154,7 @@ st.markdown('### Обучение активной модели')
 # model_id_fit = st.text_input("Введите id модели", key = "model_id_fit")
 
 if st.button("Обучить активную модель"):
-    response = httpx.post("http://localhost:8000/fit", timeout=None)
+    response = httpx.post(f"http://{backend_host}:{backend_port}/fit", timeout=None)
     if response.status_code == 200:
         st.success(f'Модель {active_model_id} обучена')
         logger.info("Пользователь обучил активную модель")
@@ -171,7 +180,7 @@ if st.button("Показать прогноз температуры"):
         logger.warning("Нет даты и времени для предсказания")
     else:
         params = {"start_time": date_time_forecast}
-        response = httpx.post("http://localhost:8000/predict", json=params)
+        response = httpx.post(f"http://{backend_host}:{backend_port}/predict", json=params)
         if response.status_code == 200:
             predictions_str = response.json()['predictions']
             predictions_dict = json.loads(predictions_str)

@@ -1,9 +1,9 @@
-import streamlit as st  # pylint: disable=import-error
-import pandas as pd  # pylint: disable=import-error
-import plotly.graph_objects as go  # pylint: disable=import-error
-from sktime.forecasting.naive import NaiveForecaster  # pylint: disable=import-error
+import streamlit as st
+import pandas as pd
+import plotly.graph_objects as go
+from sktime.forecasting.naive import NaiveForecaster
 from log import Logger
-from plotly.subplots import make_subplots  # pylint: disable=import-error
+from plotly.subplots import make_subplots
 
 
 logger = Logger(__name__).get_logger()

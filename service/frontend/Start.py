@@ -1,4 +1,4 @@
-import streamlit as st  # pylint: disable=import-error
+import streamlit as st
 from log import Logger
 
 logger = Logger(__name__).get_logger()

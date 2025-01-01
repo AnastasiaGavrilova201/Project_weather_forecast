@@ -1,0 +1,27 @@
+version: '3.9'
+
+services:
+  backend:
+    image: 456ec3cad0f8 #tfonferm/ai35_weather_forecast:backend-sha-70f5130
+    volumes:
+      - ../backend/models:/app/models
+    ports:
+      - "18000:8000"
+    networks:
+      - service_network
+
+  frontend:
+    image: 5dba2196b1a6
+    depends_on:
+      - backend
+    ports:
+      - "18501:8501"
+    networks:
+      - service_network
+    environment:
+      - BACKEND_HOST=backend
+      - BACKEND_PORT=8000
+
+networks:
+  service_network:
+    driver: bridge
