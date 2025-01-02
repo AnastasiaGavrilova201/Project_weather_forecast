@@ -191,7 +191,7 @@ if __name__ == "__main__":
     realtime.start()
     try:
         uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
-    except RuntimeError as e:
+    except RuntimeError:
         logger.error('RuntimeError %s', traceback.format_exc())
     except KeyboardInterrupt:
         logger.error('KeyboardInterrupt %s', traceback.format_exc())
