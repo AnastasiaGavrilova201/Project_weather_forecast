@@ -87,7 +87,7 @@ jobs:
       - name: Copy docker-compose
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: 89.169.156.115
+          host: 89.169.139.171
           username: weather
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
@@ -97,7 +97,7 @@ jobs:
       - name: Pull images, copy compose
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: 89.169.156.115
+          host: 89.169.139.171
           username: weather
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
