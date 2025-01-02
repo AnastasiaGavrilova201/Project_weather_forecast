@@ -43,6 +43,7 @@ else:
 
 st.markdown('### Создание нового класса модели')
 model_new = st.text_input("Введите id модели", key="model_new")
+file_name = st.text_input("Введите имя загруженного вами файла. Если оставить пустым, то модель обучится на дефолтных данных", key="file_name")
 st.markdown('##### Введите гиперпараметры новой модели')
 past_history = st.number_input("Укажите past_history модели",
                                value=720)
@@ -66,12 +67,18 @@ if st.button("Создать новый класс для модели"):
         st.error('Введите id модели')
         logger.warning("Нет id модели для создания нового класса")
     else:
-        params = {
-            # "csv_path": file_name,
-            # "table_nm": model_new,
-            "model_name": model_new,
-            "n_epochs": epochs
-        }
+        if file_name == '':
+            params = {
+                "model_name": model_new,
+                "n_epochs": epochs
+            }
+        else: 
+            params = {
+                "csv_path": file_name,
+                "table_nm": model_new,
+                "model_name": model_new,
+                "n_epochs": epochs
+            }
         response = httpx.post(
             f"http://{backend_host}:{backend_port}/load_new_model",
             json=params)
@@ -189,12 +196,12 @@ if st.button("Показать прогноз температуры"):
 # Преобразуем колонку 'dt' из миллисекунд в дату
             df['dt'] = pd.to_datetime(df['dt'], unit='ms')
             fact_data = df.iloc[:-12, :]
-            df_forescast = df.iloc[-12:, :]
+            #df_forescast = df.iloc[-12:, :]
             if options[forecast_horizon] == 12:
-                st.dataframe(df.iloc[-12:].reset_index(drop=True))
+                df_forescast = df.iloc[-12:].reset_index(drop=True)
             else:
-                st.dataframe(
-                    df.iloc[-12:(-12 + options[forecast_horizon])].reset_index(drop=True))
+                df_forescast = df.iloc[-12:(-12 + options[forecast_horizon])].reset_index(drop=True)
+            st.dataframe(df_forescast)
             logger.info(response.text)
             fig1 = make_subplots(
                 rows=1, cols=4,
