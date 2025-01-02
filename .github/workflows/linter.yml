@@ -106,3 +106,11 @@ jobs:
             python3 pycodestyle/pycodestyle.py --max-line-length=120 "$file" || exit_code=1
         done
         exit $exit_code\
+
+  dockerfiles:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Analysing the code with hadolint
+      run: |
+        cat Dockerfile | docker run --rm -i hadolint/hadolint
