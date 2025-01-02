@@ -31,7 +31,9 @@ if uploaded_file is not None:
         file_content = uploaded_file.getvalue()
         file_name = uploaded_file.name
         files = {'file': (uploaded_file.name, file_content, 'csv')}
-        response = httpx.post(f"http://{backend_host}:{backend_port}/upload_csv", files=files)
+        response = httpx.post(
+            f"http://{backend_host}:{backend_port}/upload_csv",
+            files=files)
         if response.status_code == 200:
             st.success("Ваш CSV-файл сохранен.")
             logger.info("Пользователь загрузил csv-файл")
@@ -43,7 +45,10 @@ else:
 
 st.markdown('### Создание нового класса модели')
 model_new = st.text_input("Введите id модели", key="model_new")
-file_name = st.text_input("Введите имя загруженного вами файла. Если оставить пустым, то модель обучится на дефолтных данных", key="file_name")
+file_name = st.text_input(
+    "Введите имя загруженного вами файла. "
+    "Если оставить пустым, то модель обучится на дефолтных данных",
+    key="file_name")
 st.markdown('##### Введите гиперпараметры новой модели')
 past_history = st.number_input("Укажите past_history модели",
                                value=720)
@@ -72,7 +77,7 @@ if st.button("Создать новый класс для модели"):
                 "model_name": model_new,
                 "n_epochs": epochs
             }
-        else: 
+        else:
             params = {
                 "csv_path": file_name,
                 "table_nm": model_new,
@@ -148,7 +153,9 @@ if st.button("Установить активную модель"):
         params = {
             "model_name": active_model_id
         }
-        response = httpx.post(f"http://{backend_host}:{backend_port}/set_model", json=params)
+        response = httpx.post(
+            f"http://{backend_host}:{backend_port}/set_model",
+            json=params)
         if response.status_code == 200:
             st.success(f'Установлена активная модель {active_model_id}')
             logger.info(response.text)
@@ -161,7 +168,9 @@ st.markdown('### Обучение активной модели')
 # model_id_fit = st.text_input("Введите id модели", key = "model_id_fit")
 
 if st.button("Обучить активную модель"):
-    response = httpx.post(f"http://{backend_host}:{backend_port}/fit", timeout=None)
+    response = httpx.post(
+        f"http://{backend_host}:{backend_port}/fit",
+        timeout=None)
     if response.status_code == 200:
         st.success(f'Модель {active_model_id} обучена')
         logger.info("Пользователь обучил активную модель")
@@ -187,7 +196,9 @@ if st.button("Показать прогноз температуры"):
         logger.warning("Нет даты и времени для предсказания")
     else:
         params = {"start_time": date_time_forecast}
-        response = httpx.post(f"http://{backend_host}:{backend_port}/predict", json=params)
+        response = httpx.post(
+            f"http://{backend_host}:{backend_port}/predict",
+            json=params)
         if response.status_code == 200:
             predictions_str = response.json()['predictions']
             predictions_dict = json.loads(predictions_str)
@@ -196,11 +207,12 @@ if st.button("Показать прогноз температуры"):
 # Преобразуем колонку 'dt' из миллисекунд в дату
             df['dt'] = pd.to_datetime(df['dt'], unit='ms')
             fact_data = df.iloc[:-12, :]
-            #df_forescast = df.iloc[-12:, :]
+            # df_forescast = df.iloc[-12:, :]
             if options[forecast_horizon] == 12:
                 df_forescast = df.iloc[-12:].reset_index(drop=True)
             else:
-                df_forescast = df.iloc[-12:(-12 + options[forecast_horizon])].reset_index(drop=True)
+                df_forescast = df.iloc[-12:(-12 + options[forecast_horizon])
+                                       ].reset_index(drop=True)
             st.dataframe(df_forescast)
             logger.info(response.text)
             fig1 = make_subplots(
