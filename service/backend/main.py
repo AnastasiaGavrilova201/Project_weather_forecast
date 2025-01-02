@@ -13,7 +13,7 @@ from log import Logger
 logger = Logger(__name__).get_logger()
 
 
-main_db_table_name = 'test_realtime_10'
+main_db_table_name = 'test_realtime_11'
 # Инициализация бэкенда
 api_backend = API_Backend(main_db_table_name=main_db_table_name)
 
