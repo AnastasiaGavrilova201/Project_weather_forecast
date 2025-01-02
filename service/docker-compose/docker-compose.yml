@@ -9,6 +9,7 @@ services:
       - "18000:8000"
     networks:
       - service_network
+    env_file: ".env"
 
   frontend:
     image: tfonferm/ai35_weather_forecast:frontend-latest
@@ -18,6 +19,7 @@ services:
       - "18501:8501"
     networks:
       - service_network
+    env_file: ".env"
     environment:
       - BACKEND_HOST=backend
       - BACKEND_PORT=8000
