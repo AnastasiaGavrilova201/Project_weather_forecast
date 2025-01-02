@@ -5,19 +5,24 @@ services:
   backend:
     image: tfonferm/ai35_weather_forecast:backend-latest
     volumes:
+      - ./backend-logs:/app/log
     ports:
       - "18000:8000"
     networks:
       - service_network
+    env_file: ".env"
 
   frontend:
     image: tfonferm/ai35_weather_forecast:frontend-latest
+    volumes:
+      - ./frontend-logs:/app/log
     depends_on:
       - backend
     ports:
       - "18501:8501"
     networks:
       - service_network
+    env_file: ".env"
     environment:
       - BACKEND_HOST=backend
       - BACKEND_PORT=8000

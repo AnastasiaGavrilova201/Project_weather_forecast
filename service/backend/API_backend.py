@@ -88,14 +88,15 @@ class API_Backend:
         active_model (Model): The currently active model for operations.
     """
 
-    def __init__(self, main_model_n_epochs=5):
+    def __init__(self, main_model_n_epochs=5, main_db_table_name='test_realtime_6'):
         """
         Initializes the API backend with a primary model and prepares for operations.
 
         Args:
             main_model_n_epochs (int, optional): Number of epochs for training the new model. Defaults to 5.
+            main_db_table_name (str, optional): Name of the primary model's database table.
         """
-        self.main_db_table_name = 'test_realtime_6'
+        self.main_db_table_name = main_db_table_name
         self.main_model = Model(
             self.main_db_table_name,
             'Main',
