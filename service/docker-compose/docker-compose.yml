@@ -5,7 +5,7 @@ services:
   backend:
     image: tfonferm/ai35_weather_forecast:backend-latest
     volumes:
-      - backend-logs:/app/log
+      - ./backend-logs:/app/log
     ports:
       - "18000:8000"
     networks:
@@ -15,7 +15,7 @@ services:
   frontend:
     image: tfonferm/ai35_weather_forecast:frontend-latest
     volumes:
-      - frontend-logs:/app/log
+      - ./frontend-logs:/app/log
     depends_on:
       - backend
     ports:
