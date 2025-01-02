@@ -1,14 +1,21 @@
 from typing import List, Optional
 import asyncio
 import os
+import traceback
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel
-from API_backend import API_Backend
 import uvicorn
 
+from API_backend import API_Backend
+from realtime_parser import TaskManager
+from log import Logger
 
+logger = Logger(__name__).get_logger()
+
+
+main_db_table_name = 'test_realtime_6'
 # Инициализация бэкенда
-api_backend = API_Backend()
+api_backend = API_Backend(main_db_table_name=main_db_table_name)
 
 
 class ModelDesc(BaseModel):
@@ -180,4 +187,13 @@ async def upload_csv(file: UploadFile = File(...)) -> dict:
 
 # Запуск сервера
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    realtime = TaskManager(main_db_table_name)
+    realtime.start()
+    try:
+        uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    except RuntimeError:
+        logger.error('RuntimeError %s', traceback.format_exc())
+    except KeyboardInterrupt:
+        logger.error('KeyboardInterrupt %s', traceback.format_exc())
+    finally:
+        realtime.finish(timeout=5)

@@ -156,13 +156,13 @@ class TaskManager:
             table_nm (str): The name of the database table for data storage.
         """
         self.realtime = Realtime(table_nm)
-        self.thread = Thread(target=self.realtime.run())
+        self.thread = Thread(target=self.realtime.run)
 
     def start(self):
         """
         Starts the Realtime data collection process in a separate thread.
         """
-        self.thread.run()
+        self.thread.start()
 
     def finish(self, timeout=None):
         """
