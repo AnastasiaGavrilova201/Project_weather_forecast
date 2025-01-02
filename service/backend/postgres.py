@@ -253,6 +253,13 @@ class DatabaseManager:
         self.create_table(table_nm)
         headers = []
         values = []
+        if 'dt' in self.features:
+            time_in_data = self._get_feature(
+                data_dict, 'dt', self.features['dt'])
+            in_table_result = self.select(table_nm, additional_options=f"where dt = {time_in_data}")
+            if len(in_table_result) > 0:
+                logger.info('%s dt is in table %s', time_in_data, table_nm)
+                return
         for k, v in self.features.items():
             if feature_replacement_mapping is not None:
                 formatted_value = self._get_feature(
