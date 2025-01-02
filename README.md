@@ -82,3 +82,36 @@
      * Пользователь вводит дату и время, на которое строится прогноз, и горизонт
 прогнозирования и нажимает кнопку «Показать прогноз температуры».
      * См. gif по ссылке: https://drive.google.com/drive/folders/1jOdLWER0UzI61nNaeFkjCuH9q4vadBzR
+
+# Сборка и запуск
+
+Для frontend и backend собираются по 1 докер образу. Собрать можно автоматически или вручную.
+
+## Автоматическая сборка docker образов
+
+Автоматическая сборка происходит с помощью github-actions при каждом пуше коммита или тега в репозиторий. Собранные образы автоматически пушатся в dockerhub. Также обновляются 2 образа:
+* tfonferm/ai35_weather_forecast:backend-latest
+* tfonferm/ai35_weather_forecast:frontend-latest
+
+## Сборка docker образов вручную
+
+Для сборки backend-образа, выполните `docker build -t tfonferm/ai35_weather_forecast:backend-latest -f service/backend/Dockerfile .`.
+
+Для сборки frontend-образа, выполните `docker build -t tfonferm/ai35_weather_forecast:frontend-latest -f service/frontend/Dockerfile .`.
+
+## Запуск сервисов вручную с помощью docker compose
+
+Перед ручным запуском в файле `service/docker-compose/.env` заполните пароль от базы и API-ключ сервиса с данными о погоде.
+
+После этого, для ручного запуска выполните следующие команды:
+```sh
+cd service/docker-compose/
+docker compose pull
+docker compose up -d
+```
+
+Порты указываются в `docker-compose.yml`. Если его не изменять, Streamlit будет доступен по ссылке localhost:18501.
+
+# Развернутый на удаленном сервере сервис
+
+С помощью github-actions развернут (и автоматически деплоится при создании тега) сервис на удаленном сервере в yandex-cloud. Увидеть его работу можно тут: http://84.201.145.245:18501.
