@@ -4,9 +4,8 @@ WORKDIR /app
 
 COPY service/backend/ /app
 
-
 RUN mkdir -p ~/.postgresql && \
-    wget "https://storage.yandexcloud.net/cloud-certs/CA.pem" \
+    wget --progress=dot:giga "https://storage.yandexcloud.net/cloud-certs/CA.pem" \
     --output-document ~/.postgresql/root.crt && \
     chmod 0600 ~/.postgresql/root.crt
 

@@ -114,3 +114,4 @@ jobs:
     - name: Analysing the code with hadolint
       run: |
         cat service/backend/Dockerfile | docker run --rm -i hadolint/hadolint
+        cat service/frontend/Dockerfile | docker run --rm -i hadolint/hadolint
